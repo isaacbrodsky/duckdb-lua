@@ -145,7 +145,7 @@ inline void LuaScalarVarcharFun(DataChunk &args, ExpressionState &state, Vector 
 	    });
 }
 
-template <typename T, bool IsInteger>
+template <typename T, bool IsInteger, bool IsBool>
 inline void LuaScalarNumericFun(DataChunk &args, ExpressionState &state, Vector &result) {
 	Value contextVarNameValue = Value(LogicalType::VARCHAR);
 	state.GetContext().TryGetCurrentSetting(CONTEXT_OPTION_NAME, contextVarNameValue);
@@ -158,7 +158,9 @@ inline void LuaScalarNumericFun(DataChunk &args, ExpressionState &state, Vector 
 		    lua_State *L = luaL_newstate();
 		    luaL_openlibs(L);
 
-		    if (IsInteger) {
+		    if (IsBool) {
+			    lua_pushboolean(L, data);
+		    } else if (IsInteger) {
 			    lua_pushinteger(L, data);
 		    } else {
 			    lua_pushnumber(L, data);
@@ -192,25 +194,27 @@ static void LoadInternal(ExtensionLoader &loader) {
 	lua_scalar_functions.AddFunction(lua_scalar_function_json);
 
 	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::FLOAT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<float, false>));
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<float, false, false>));
 	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::DOUBLE},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<double, false>));
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<double, false, false>));
 	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::TINYINT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int8_t, true>));
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int8_t, true, false>));
 	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::UTINYINT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint8_t, true>));
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint8_t, true, false>));
 	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::SMALLINT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int16_t, true>));
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int16_t, true, false>));
 	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::USMALLINT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint16_t, true>));
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint16_t, true, false>));
 	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::INTEGER},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int32_t, true>));
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int32_t, true, false>));
 	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::UINTEGER},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint32_t, true>));
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint32_t, true, false>));
 	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::BIGINT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int64_t, true>));
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int64_t, true, false>));
 	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::UBIGINT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint64_t, false>));
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint64_t, false, false>));
+	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::BOOLEAN},
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<bool, false, true>));
 
 	loader.RegisterFunction(lua_scalar_functions);
 
