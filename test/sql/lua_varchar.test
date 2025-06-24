@@ -1,44 +1,48 @@
-# name: test/sql/lua.test
+# name: test/sql/lua_varchar.test
 # description: test lua extension
 # group: [sql]
 
 # Before we load the extension, this will fail
 statement error
-SELECT lua('Sam');
+SELECT lua('Sam', 'abc');
 ----
 Catalog Error: Scalar Function with name lua does not exist!
 
 # Require statement will ensure this test is run with this extension loaded
 require lua
 
-# Confirm the extension works
 query I
-SELECT lua('return 1 + 2');
+SELECT lua('return context', 'abc');
 ----
-3
+abc
 
 query I
-SELECT lua('return "aa" .. "bb"');
+SELECT lua('return "aa" .. context', 'cc');
 ----
-aabb
+aacc
 
 query I
-SELECT lua('return 1 > 2');
+SELECT lua('return 1 > 2', '');
 ----
 false
 
 query I
-SELECT lua('return 1 < 2');
+SELECT lua('return 1 < 2', 'nulllllll');
 ----
 true
 
 query I
-SELECT lua('1 < 2');
+SELECT lua('return 1 < 2', 'NULL');
+----
+true
+
+query I
+SELECT lua('1 < 2', 'abcdefghijkl');
 ----
 [string "line"]:1: unexpected symbol near '1'
 
 # Invalid code
 query I
-SELECT lua('aaa');
+SELECT lua('aaa', 'abcdef');
 ----
 [string "line"]:1: syntax error near <eof>

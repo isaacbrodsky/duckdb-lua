@@ -1,0 +1,102 @@
+# name: test/sql/lua_integer.test
+# description: test lua extension
+# group: [sql]
+
+# Before we load the extension, this will fail
+statement error
+SELECT lua('Sam', 5);
+----
+Catalog Error: Scalar Function with name lua does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require lua
+
+query I
+SELECT lua('return context', 5);
+----
+5
+
+query I
+SELECT lua('return "aa" .. context', 100);
+----
+aa100
+
+query I
+SELECT lua('return context', 5.0::float);
+----
+5.0
+
+query I
+SELECT lua('return context', 5.0::double);
+----
+5.0
+
+query I
+SELECT lua('return context', 5::tinyint);
+----
+5
+
+query I
+SELECT lua('return context', -5::tinyint);
+----
+-5
+
+query I
+SELECT lua('return context', 5::utinyint);
+----
+5
+
+query I
+SELECT lua('return context', 5::smallint);
+----
+5
+
+query I
+SELECT lua('return context', -5::smallint);
+----
+-5
+
+query I
+SELECT lua('return context', 5::usmallint);
+----
+5
+
+query I
+SELECT lua('return context', 5::integer);
+----
+5
+
+query I
+SELECT lua('return context', -5::integer);
+----
+-5
+
+query I
+SELECT lua('return context', 5::uinteger);
+----
+5
+
+query I
+SELECT lua('return context', 5::bigint);
+----
+5
+
+query I
+SELECT lua('return context', -5::bigint);
+----
+-5
+
+query I
+SELECT lua('return context', 5::ubigint);
+----
+5.0
+
+query I
+SELECT lua('if context then return "a" else return "b" end', true);
+----
+a
+
+query I
+SELECT lua('if context then return "a" else return "b" end', false);
+----
+b
