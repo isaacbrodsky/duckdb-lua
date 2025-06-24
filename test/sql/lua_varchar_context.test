@@ -1,4 +1,4 @@
-# name: test/sql/lua_varchar.test
+# name: test/sql/lua_varchar_context.test
 # description: test lua extension
 # group: [sql]
 
