@@ -1,5 +1,5 @@
 [![Extension Test](https://github.com/isaacbrodsky/duckdb-lua/actions/workflows/MainDistributionPipeline.yml/badge.svg)](https://github.com/isaacbrodsky/duckdb-lua/actions/workflows/MainDistributionPipeline.yml)
-[![DuckDB Version](https://img.shields.io/static/v1?label=duckdb&message=v1.3.1&color=blue)](https://github.com/duckdb/duckdb/releases/tag/v1.3.1)
+<!-- [![DuckDB Version](https://img.shields.io/static/v1?label=duckdb&message=v1.4.0&color=blue)](https://github.com/duckdb/duckdb/releases/tag/v1.4.0) -->
 [![Lua Version](https://img.shields.io/static/v1?label=lua&message=v5.4.8&color=blue)](https://lua.org/home.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -8,7 +8,7 @@
 This extension adds the embedded scripting language [Lua](https://lua.org) to [DuckDB](https://duckdb.org/). Lua is a powerful, small, embedded, and free scripting language.
 
 > [!NOTE]
-> This extension has not been released to community extensions yet. That is *Coming Soon™*.
+> This extension has not been released to community extensions yet. That is *Coming Soon™*, pending the release of DuckDB 1.4.0. In the mean time, build this extension with latest [duckdb/duckdb](https://github.com/duckdb/duckdb).
 
 Install via community extensions:
 
@@ -23,6 +23,16 @@ SELECT lua('return "aa" .. context', "bb");
 ```
 
 Returns `"aabb"`.
+
+For the context parameter, you can pass in strings, integers, floats, booleans, and so on. Except for JSON input, the return type will be VARCHAR. If an error is encountered, the error message will be returned instead. If you pass in JSON type data, it will be deserialized for you on the Lua side and the Lua return value will also be JSON serialized.
+
+Please see the issues for important current performance limitations of this extension.
+
+You may wish to rename the `context` variable, if so use the following option:
+```sql
+SET lua_context_name = 'ctx';
+SELECT lua('return ctx', 'abc');
+```
 
 ## Building
 ### Managing dependencies
@@ -52,7 +62,8 @@ The main binaries that will be built are:
 ## Running the extension
 To run the extension code, simply start the shell with `./build/release/duckdb`.
 
-Now we can use the features from the extension directly in DuckDB. The template contains a single scalar function `lua()` that takes a string arguments and returns a string:
+Now we can use the features from the extension directly in DuckDB. The template contains a scalar function `lua()` that takes a string arguments and returns a string:
+
 ```
 D select lua('return "aa" .. "bb"') as result;
 ┌───────────────┐

@@ -158,6 +158,7 @@ inline void LuaScalarNumericFun(DataChunk &args, ExpressionState &state, Vector 
 		    lua_State *L = luaL_newstate();
 		    luaL_openlibs(L);
 
+		    static_assert(!(IsBool && IsInteger), "LuaScalarNumericFun template invalid");
 		    if (IsBool) {
 			    lua_pushboolean(L, data);
 		    } else if (IsInteger) {
@@ -217,8 +218,6 @@ static void LoadInternal(ExtensionLoader &loader) {
 	                                                LogicalType::VARCHAR, LuaScalarNumericFun<bool, false, true>));
 
 	loader.RegisterFunction(lua_scalar_functions);
-
-	// TODO: integer in
 
 	auto &config = DBConfig::GetConfig(loader.GetDatabaseInstance());
 	config.AddExtensionOption("lua_context_name", "Global context variable name. Default: 'context'",
