@@ -145,6 +145,36 @@ inline void LuaScalarVarcharFun(DataChunk &args, ExpressionState &state, Vector 
 	    });
 }
 
+template <typename T, bool IsInteger>
+inline void LuaScalarNumericFun(DataChunk &args, ExpressionState &state, Vector &result) {
+	Value contextVarNameValue = Value(LogicalType::VARCHAR);
+	state.GetContext().TryGetCurrentSetting(CONTEXT_OPTION_NAME, contextVarNameValue);
+	auto contextVarName = contextVarNameValue.GetValue<string>();
+
+	auto &script_vector = args.data[0];
+	auto &data_vector = args.data[1];
+	BinaryExecutor::Execute<string_t, T, string_t>(
+	    script_vector, data_vector, result, args.size(), [&](string_t script, T data) {
+		    lua_State *L = luaL_newstate();
+		    luaL_openlibs(L);
+
+		    if (IsInteger) {
+			    lua_pushinteger(L, data);
+		    } else {
+			    lua_pushnumber(L, data);
+		    }
+		    lua_setglobal(L, contextVarName.c_str());
+
+		    // Run the user code
+		    auto error = luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
+		    auto resultStr = ReadLuaResponse(L, error);
+
+		    lua_close(L);
+
+		    return StringVector::AddString(result, resultStr);
+	    });
+}
+
 static void LoadInternal(ExtensionLoader &loader) {
 	loader.SetDescription(StringUtil::Format("Lua embedded scripting language, %s", LUA_RELEASE));
 
@@ -160,6 +190,27 @@ static void LoadInternal(ExtensionLoader &loader) {
 	auto lua_scalar_function_json =
 	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::JSON()}, LogicalType::JSON(), LuaScalarJsonFun);
 	lua_scalar_functions.AddFunction(lua_scalar_function_json);
+
+	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::FLOAT},
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<float, false>));
+	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::DOUBLE},
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<double, false>));
+	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::TINYINT},
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int8_t, true>));
+	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::UTINYINT},
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint8_t, true>));
+	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::SMALLINT},
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int16_t, true>));
+	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::USMALLINT},
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint16_t, true>));
+	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::INTEGER},
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int32_t, true>));
+	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::UINTEGER},
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint32_t, true>));
+	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::BIGINT},
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int64_t, true>));
+	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::UBIGINT},
+	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint64_t, false>));
 
 	loader.RegisterFunction(lua_scalar_functions);
 
