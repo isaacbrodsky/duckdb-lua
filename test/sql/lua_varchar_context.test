@@ -1,0 +1,33 @@
+# name: test/sql/lua_varchar_context.test
+# description: test lua extension
+# group: [sql]
+
+# Before we load the extension, this will fail
+statement error
+SELECT lua('Sam', 'abc');
+----
+Catalog Error: Scalar Function with name lua does not exist!
+
+statement error
+set lua_context_name = 'ctx';
+----
+Catalog Error: unrecognized configuration parameter "lua_context_name"
+
+# Require statement will ensure this test is run with this extension loaded
+require lua
+
+statement ok
+set lua_context_name = 'ctx';
+
+query I
+SELECT lua('return context', 'abc');
+----
+nil
+
+query I
+SELECT lua('return ctx', 'abc');
+----
+abc
+
+statement ok
+set lua_context_name = 'context';

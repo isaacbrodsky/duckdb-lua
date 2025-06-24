@@ -19,7 +19,7 @@ set(EXTENSION_SOURCES src/lua_extension.cpp)
 build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
 build_loadable_extension(${TARGET_NAME} " " ${EXTENSION_SOURCES})
 
-# Link OpenSSL in both the static library as the loadable extension
+# Link Lua in both the static library as the loadable extension
 target_link_libraries(${EXTENSION_NAME} lua)
 target_link_libraries(${LOADABLE_EXTENSION_NAME} lua)
 
