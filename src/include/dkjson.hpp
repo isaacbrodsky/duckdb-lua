@@ -389,7 +389,7 @@ function json.encode (value, state)
     return concat (buffer)
   end
 end
-
+)""" /* msvc needs smaller strings! */ R"""(
 local function loc (str, where)
   local line, pos, linepos = 1, 1, 0
   while true do
