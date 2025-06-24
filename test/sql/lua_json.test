@@ -1,0 +1,50 @@
+# name: test/sql/lua_json.test
+# description: test lua extension
+# group: [sql]
+
+# Before we load the extension, this will fail
+statement error
+SELECT lua('Sam', {'hello':'world'}::json);
+----
+Catalog Error: Scalar Function with name lua does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require lua
+
+require json
+
+# Invalid code
+query I
+SELECT lua('aaa', {'hello':'world'}::json);
+----
+[string "line"]:1: syntax error near <eof>
+
+query I
+SELECT lua('return context["hello"]', {'hello':'world'}::json);
+----
+"world"
+
+query I
+SELECT lua('return context', {'hello':'world'}::json);
+----
+{"hello":"world"}
+
+query I
+SELECT lua('return {context["hello"], 123}', {'hello':'world'}::json);
+----
+["world",123]
+
+query I
+SELECT lua('return context[1] + context[2]', [1,2,-1]::json);
+----
+3
+
+query I
+SELECT lua('return context * -1', 5::json);
+----
+-5
+
+query I
+SELECT lua('return context', '"aaa"'::json);
+----
+"aaa"

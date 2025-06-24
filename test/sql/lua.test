@@ -8,6 +8,11 @@ SELECT lua('Sam');
 ----
 Catalog Error: Scalar Function with name lua does not exist!
 
+statement error
+SELECT lua('Sam', 'abc');
+----
+Catalog Error: Scalar Function with name lua does not exist!
+
 # Require statement will ensure this test is run with this extension loaded
 require lua
 
