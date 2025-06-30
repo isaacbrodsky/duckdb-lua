@@ -109,3 +109,21 @@ abc1
 abc2
 abc3
 abc4
+
+query I
+SELECT lua(NULL, i) FROM range(0, 5) tbl(i);
+----
+NULL
+NULL
+NULL
+NULL
+NULL
+
+query I
+SELECT lua('if context == nil then return "a" else return "b" end', if(i < 3, null, i)) FROM range(0, 5) tbl(i);
+----
+a
+a
+a
+b
+b

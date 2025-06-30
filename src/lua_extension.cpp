@@ -69,8 +69,7 @@ inline void LuaScalarFun(DataChunk &args, ExpressionState &state, Vector &result
 	auto result_data = FlatVector::GetData<string_t>(result);
 	for (idx_t i = 0; i < args.size(); i++) {
 		if (!scriptData.validity.RowIsValid(scriptData.sel->get_index(i))) {
-			// TODO
-			result_data[i] = StringVector::AddString(result, "");
+			result.SetValue(i, Value(LogicalType::VARCHAR));
 			continue;
 		}
 
@@ -117,20 +116,22 @@ inline void LuaScalarJsonFun(DataChunk &args, ExpressionState &state, Vector &re
 	}
 
 	for (idx_t i = 0; i < args.size(); i++) {
-		if (!scriptData.validity.RowIsValid(scriptData.sel->get_index(i)) ||
-		    !argData.validity.RowIsValid(argData.sel->get_index(i))) {
-			// TODO
-			result_data[i] = StringVector::AddString(result, "");
+		if (!scriptData.validity.RowIsValid(scriptData.sel->get_index(i))) {
+			result.SetValue(i, Value(LogicalType::JSON()));
 			continue;
 		}
 		if (!jsonError) {
-			// json.decode
-			auto decodeField = lua_getfield(L, -1, "decode");
-
 			auto script = scriptDataPtr[scriptData.sel->get_index(i)];
-			auto data = argDataPtr[argData.sel->get_index(i)];
-			lua_pushlstring(L, data.GetData(), data.GetSize());
-			auto decodeError = lua_pcall(L, 1, 1, 0);
+			int decodeError = 0;
+			if (argData.validity.RowIsValid(argData.sel->get_index(i))) {
+				// json.decode
+				lua_getfield(L, -1, "decode");
+				auto data = argDataPtr[argData.sel->get_index(i)];
+				lua_pushlstring(L, data.GetData(), data.GetSize());
+				decodeError = lua_pcall(L, 1, 1, 0);
+			} else {
+				lua_pushnil(L);
+			}
 			if (decodeError) {
 				resultStr = ReadLuaResponse(L, decodeError);
 			} else {
@@ -143,6 +144,7 @@ inline void LuaScalarJsonFun(DataChunk &args, ExpressionState &state, Vector &re
 				    luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
 				if (error) {
 					resultStr = ReadLuaResponse(L, error);
+					lua_pop(L, 1); // remove json.encode
 				} else {
 					auto encodeError = lua_pcall(L, 1, 1, 0);
 					resultStr = ReadLuaResponse(L, encodeError);
@@ -178,16 +180,19 @@ inline void LuaScalarVarcharFun(DataChunk &args, ExpressionState &state, Vector 
 	result.SetVectorType(VectorType::FLAT_VECTOR);
 	auto result_data = FlatVector::GetData<string_t>(result);
 	for (idx_t i = 0; i < args.size(); i++) {
-		if (!scriptData.validity.RowIsValid(scriptData.sel->get_index(i)) ||
-		    !argData.validity.RowIsValid(argData.sel->get_index(i))) {
-			// TODO
-			result_data[i] = StringVector::AddString(result, "");
+		if (!scriptData.validity.RowIsValid(scriptData.sel->get_index(i))) {
+			result.SetValue(i, Value(LogicalType::VARCHAR));
 			continue;
 		}
 
 		auto script = scriptDataPtr[scriptData.sel->get_index(i)];
-		auto data = argDataPtr[argData.sel->get_index(i)];
-		lua_pushlstring(L, data.GetData(), data.GetSize());
+
+		if (argData.validity.RowIsValid(argData.sel->get_index(i))) {
+			auto data = argDataPtr[argData.sel->get_index(i)];
+			lua_pushlstring(L, data.GetData(), data.GetSize());
+		} else {
+			lua_pushnil(L);
+		}
 		lua_setglobal(L, contextVarName.c_str());
 
 		// Run the user code
@@ -222,22 +227,25 @@ inline void LuaScalarNumericFun(DataChunk &args, ExpressionState &state, Vector 
 	result.SetVectorType(VectorType::FLAT_VECTOR);
 	auto result_data = FlatVector::GetData<string_t>(result);
 	for (idx_t i = 0; i < args.size(); i++) {
-		if (!scriptData.validity.RowIsValid(scriptData.sel->get_index(i)) ||
-		    !argData.validity.RowIsValid(argData.sel->get_index(i))) {
-			// TODO
-			result_data[i] = StringVector::AddString(result, "");
+		if (!scriptData.validity.RowIsValid(scriptData.sel->get_index(i))) {
+			result.SetValue(i, Value(LogicalType::VARCHAR));
 			continue;
 		}
 
 		auto script = scriptDataPtr[scriptData.sel->get_index(i)];
-		auto data = argDataPtr[argData.sel->get_index(i)];
-		static_assert(!(IsBool && IsInteger), "LuaScalarNumericFun template invalid");
-		if (IsBool) {
-			lua_pushboolean(L, data);
-		} else if (IsInteger) {
-			lua_pushinteger(L, data);
+
+		if (argData.validity.RowIsValid(argData.sel->get_index(i))) {
+			auto data = argDataPtr[argData.sel->get_index(i)];
+			static_assert(!(IsBool && IsInteger), "LuaScalarNumericFun template invalid");
+			if (IsBool) {
+				lua_pushboolean(L, data);
+			} else if (IsInteger) {
+				lua_pushinteger(L, data);
+			} else {
+				lua_pushnumber(L, data);
+			}
 		} else {
-			lua_pushnumber(L, data);
+			lua_pushnil(L);
 		}
 		lua_setglobal(L, contextVarName.c_str());
 
@@ -258,39 +266,69 @@ static void LoadInternal(ExtensionLoader &loader) {
 
 	ScalarFunctionSet lua_scalar_functions("lua");
 
-	auto lua_scalar_function = ScalarFunction("lua", {LogicalType::VARCHAR}, LogicalType::VARCHAR, LuaScalarFun);
+	// We don't know if the user script calls e.g. math.random(), so deoptimize
+	auto stability = FunctionStability::VOLATILE;
+
+	auto lua_scalar_function =
+	    ScalarFunction("lua", {LogicalType::VARCHAR}, LogicalType::VARCHAR, LuaScalarFun, nullptr, nullptr, nullptr,
+	                   nullptr, LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING);
 	lua_scalar_functions.AddFunction(lua_scalar_function);
 
 	auto lua_scalar_function_varchar =
-	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::VARCHAR}, LogicalType::VARCHAR, LuaScalarVarcharFun);
+	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::VARCHAR}, LogicalType::VARCHAR, LuaScalarVarcharFun,
+	                   nullptr, nullptr, nullptr, nullptr, LogicalType(LogicalTypeId::INVALID), stability,
+	                   FunctionNullHandling::SPECIAL_HANDLING);
 	lua_scalar_functions.AddFunction(lua_scalar_function_varchar);
 
-	auto lua_scalar_function_json =
-	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::JSON()}, LogicalType::JSON(), LuaScalarJsonFun);
+	auto lua_scalar_function_json = ScalarFunction(
+	    "lua", {LogicalType::VARCHAR, LogicalType::JSON()}, LogicalType::JSON(), LuaScalarJsonFun, nullptr, nullptr,
+	    nullptr, nullptr, LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING);
 	lua_scalar_functions.AddFunction(lua_scalar_function_json);
 
-	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::FLOAT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<float, false, false>));
-	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::DOUBLE},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<double, false, false>));
-	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::TINYINT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int8_t, true, false>));
-	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::UTINYINT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint8_t, true, false>));
-	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::SMALLINT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int16_t, true, false>));
-	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::USMALLINT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint16_t, true, false>));
-	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::INTEGER},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int32_t, true, false>));
-	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::UINTEGER},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint32_t, true, false>));
-	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::BIGINT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<int64_t, true, false>));
-	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::UBIGINT},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<uint64_t, false, false>));
-	lua_scalar_functions.AddFunction(ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::BOOLEAN},
-	                                                LogicalType::VARCHAR, LuaScalarNumericFun<bool, false, true>));
+	lua_scalar_functions.AddFunction(
+	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::FLOAT}, LogicalType::VARCHAR,
+	                   LuaScalarNumericFun<float, false, false>, nullptr, nullptr, nullptr, nullptr,
+	                   LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING));
+	lua_scalar_functions.AddFunction(
+	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::DOUBLE}, LogicalType::VARCHAR,
+	                   LuaScalarNumericFun<double, false, false>, nullptr, nullptr, nullptr, nullptr,
+	                   LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING));
+	lua_scalar_functions.AddFunction(
+	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::TINYINT}, LogicalType::VARCHAR,
+	                   LuaScalarNumericFun<int8_t, true, false>, nullptr, nullptr, nullptr, nullptr,
+	                   LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING));
+	lua_scalar_functions.AddFunction(
+	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::UTINYINT}, LogicalType::VARCHAR,
+	                   LuaScalarNumericFun<uint8_t, true, false>, nullptr, nullptr, nullptr, nullptr,
+	                   LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING));
+	lua_scalar_functions.AddFunction(
+	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::SMALLINT}, LogicalType::VARCHAR,
+	                   LuaScalarNumericFun<int16_t, true, false>, nullptr, nullptr, nullptr, nullptr,
+	                   LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING));
+	lua_scalar_functions.AddFunction(
+	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::USMALLINT}, LogicalType::VARCHAR,
+	                   LuaScalarNumericFun<uint16_t, true, false>, nullptr, nullptr, nullptr, nullptr,
+	                   LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING));
+	lua_scalar_functions.AddFunction(
+	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::INTEGER}, LogicalType::VARCHAR,
+	                   LuaScalarNumericFun<int32_t, true, false>, nullptr, nullptr, nullptr, nullptr,
+	                   LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING));
+	lua_scalar_functions.AddFunction(
+	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::UINTEGER}, LogicalType::VARCHAR,
+	                   LuaScalarNumericFun<uint32_t, true, false>, nullptr, nullptr, nullptr, nullptr,
+	                   LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING));
+	lua_scalar_functions.AddFunction(
+	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::BIGINT}, LogicalType::VARCHAR,
+	                   LuaScalarNumericFun<int64_t, true, false>, nullptr, nullptr, nullptr, nullptr,
+	                   LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING));
+	lua_scalar_functions.AddFunction(
+	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::UBIGINT}, LogicalType::VARCHAR,
+	                   LuaScalarNumericFun<uint64_t, false, false>, nullptr, nullptr, nullptr, nullptr,
+	                   LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING));
+	lua_scalar_functions.AddFunction(
+	    ScalarFunction("lua", {LogicalType::VARCHAR, LogicalType::BOOLEAN}, LogicalType::VARCHAR,
+	                   LuaScalarNumericFun<bool, false, true>, nullptr, nullptr, nullptr, nullptr,
+	                   LogicalType(LogicalTypeId::INVALID), stability, FunctionNullHandling::SPECIAL_HANDLING));
 
 	loader.RegisterFunction(lua_scalar_functions);
 

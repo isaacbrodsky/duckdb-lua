@@ -69,3 +69,12 @@ abc1
 abc2
 abc3
 abc4
+
+query I
+SELECT lua(if(i < 3, 'return "abc' || cast(i as varchar) || '"', null)) FROM range(0, 5) tbl(i);
+----
+abc0
+abc1
+abc2
+NULL
+NULL

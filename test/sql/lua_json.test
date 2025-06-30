@@ -57,3 +57,12 @@ SELECT lua('return "abc" .. context', cast(i as json)) FROM range(0, 5) tbl(i);
 "abc2"
 "abc3"
 "abc4"
+
+query I
+SELECT lua('return "abc" .. context', if(i < 3, null, cast(i as json))) FROM range(0, 5) tbl(i);
+----
+[string "line"]:1: attempt to concatenate a nil value (global 'context')
+[string "line"]:1: attempt to concatenate a nil value (global 'context')
+[string "line"]:1: attempt to concatenate a nil value (global 'context')
+"abc3"
+"abc4"
