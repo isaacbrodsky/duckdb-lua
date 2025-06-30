@@ -44,6 +44,7 @@ inline std::string ReadLuaResponse(lua_State *L, bool error) {
 			lua_pop(L, 1);
 		} else {
 			resultStr = StringUtil::Format("Unknown type: %s", lua_typename(L, -1));
+			lua_pop(L, 1);
 		}
 	}
 	return resultStr;
@@ -54,22 +55,31 @@ inline void LuaScalarFun(DataChunk &args, ExpressionState &state, Vector &result
 	state.GetContext().TryGetCurrentSetting(CONTEXT_OPTION_NAME, contextVarNameValue);
 	auto contextVarName = contextVarNameValue.GetValue<string>();
 
-	auto &script_vector = args.data[0];
-	UnaryExecutor::Execute<string_t, string_t>(script_vector, result, args.size(), [&](string_t script) {
-		lua_State *L = luaL_newstate();
-		luaL_openlibs(L);
+	lua_State *L = luaL_newstate();
+	luaL_openlibs(L);
 
-		lua_pushnil(L);
-		lua_setglobal(L, contextVarName.c_str());
+	lua_pushnil(L);
+	lua_setglobal(L, contextVarName.c_str());
 
+	UnifiedVectorFormat vdata;
+	args.data[0].ToUnifiedFormat(args.size(), vdata);
+
+	auto ldata = UnifiedVectorFormat::GetData<string_t>(vdata);
+
+	result.SetVectorType(VectorType::FLAT_VECTOR);
+	auto result_data = FlatVector::GetData<string_t>(result);
+	for (idx_t i = 0; i < args.size(); i++) {
 		// Run the user code
+		auto script = ldata[i];
 		auto error = luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
 		auto resultStr = ReadLuaResponse(L, error);
+		auto resultDuckdbStr = string_t(strdup(resultStr.c_str()), resultStr.size());
 
-		lua_close(L);
+		result_data[i] = StringVector::AddString(result, resultDuckdbStr);
+	}
 
-		return StringVector::AddString(result, resultStr);
-	});
+	lua_close(L);
+	result.Verify(args.size());
 }
 
 inline void LuaScalarJsonFun(DataChunk &args, ExpressionState &state, Vector &result) {
