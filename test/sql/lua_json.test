@@ -48,3 +48,12 @@ query I
 SELECT lua('return context', '"aaa"'::json);
 ----
 "aaa"
+
+query I
+SELECT lua('return "abc" .. context', cast(i as json)) FROM range(0, 5) tbl(i);
+----
+"abc0"
+"abc1"
+"abc2"
+"abc3"
+"abc4"

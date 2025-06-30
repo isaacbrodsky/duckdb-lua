@@ -100,3 +100,12 @@ query I
 SELECT lua('if context then return "a" else return "b" end', false);
 ----
 b
+
+query I
+SELECT lua('return "abc" .. context', i) FROM range(0, 5) tbl(i);
+----
+abc0
+abc1
+abc2
+abc3
+abc4

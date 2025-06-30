@@ -61,16 +61,21 @@ inline void LuaScalarFun(DataChunk &args, ExpressionState &state, Vector &result
 	lua_pushnil(L);
 	lua_setglobal(L, contextVarName.c_str());
 
-	UnifiedVectorFormat vdata;
-	args.data[0].ToUnifiedFormat(args.size(), vdata);
-
-	auto ldata = UnifiedVectorFormat::GetData<string_t>(vdata);
+	UnifiedVectorFormat scriptData;
+	args.data[0].ToUnifiedFormat(args.size(), scriptData);
+	auto scriptDataPtr = UnifiedVectorFormat::GetData<string_t>(scriptData);
 
 	result.SetVectorType(VectorType::FLAT_VECTOR);
 	auto result_data = FlatVector::GetData<string_t>(result);
 	for (idx_t i = 0; i < args.size(); i++) {
+		if (!scriptData.validity.RowIsValid(scriptData.sel->get_index(i))) {
+			// TODO
+			result_data[i] = StringVector::AddString(result, "");
+			continue;
+		}
+
 		// Run the user code
-		auto script = ldata[i];
+		auto script = scriptDataPtr[scriptData.sel->get_index(i)];
 		auto error = luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
 		auto resultStr = ReadLuaResponse(L, error);
 		auto resultDuckdbStr = string_t(strdup(resultStr.c_str()), resultStr.size());
@@ -87,47 +92,71 @@ inline void LuaScalarJsonFun(DataChunk &args, ExpressionState &state, Vector &re
 	state.GetContext().TryGetCurrentSetting(CONTEXT_OPTION_NAME, contextVarNameValue);
 	auto contextVarName = contextVarNameValue.GetValue<string>();
 
-	auto &script_vector = args.data[0];
-	auto &data_vector = args.data[1];
-	BinaryExecutor::Execute<string_t, string_t, string_t>(
-	    script_vector, data_vector, result, args.size(), [&](string_t script, string_t data) {
-		    lua_State *L = luaL_newstate();
-		    luaL_openlibs(L);
+	lua_State *L = luaL_newstate();
+	luaL_openlibs(L);
 
-		    std::string resultStr;
-		    auto jsonError = luaL_loadbuffer(L, DKJSON_SOURCE.c_str(), DKJSON_SOURCE.size(), DKJSON_BUFFER_NAME) ||
-		                     lua_pcall(L, 0, 1, 0);
-		    if (jsonError) {
-			    resultStr = ReadLuaResponse(L, jsonError);
-		    } else {
-			    // json.decode
-			    auto decodeField = lua_getfield(L, -1, "decode");
+	lua_pushnil(L);
+	lua_setglobal(L, contextVarName.c_str());
 
-			    lua_pushlstring(L, data.GetData(), data.GetSize());
-			    auto decodeError = lua_pcall(L, 1, 1, 0);
-			    if (decodeError) {
-				    resultStr = ReadLuaResponse(L, decodeError);
-			    } else {
-				    lua_setglobal(L, contextVarName.c_str());
-				    // json.encode, set up for encoding after
-				    lua_getfield(L, -1, "encode");
+	UnifiedVectorFormat scriptData;
+	args.data[0].ToUnifiedFormat(args.size(), scriptData);
+	auto scriptDataPtr = UnifiedVectorFormat::GetData<string_t>(scriptData);
 
-				    // Run the user code
-				    auto error =
-				        luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
-				    if (error) {
-					    resultStr = ReadLuaResponse(L, error);
-				    } else {
-					    auto encodeError = lua_pcall(L, 1, 1, 0);
-					    resultStr = ReadLuaResponse(L, encodeError);
-				    }
-			    }
-		    }
+	UnifiedVectorFormat argData;
+	args.data[1].ToUnifiedFormat(args.size(), argData);
+	auto argDataPtr = UnifiedVectorFormat::GetData<string_t>(argData);
 
-		    lua_close(L);
+	result.SetVectorType(VectorType::FLAT_VECTOR);
+	auto result_data = FlatVector::GetData<string_t>(result);
 
-		    return StringVector::AddString(result, resultStr);
-	    });
+	std::string resultStr;
+	auto jsonError =
+	    luaL_loadbuffer(L, DKJSON_SOURCE.c_str(), DKJSON_SOURCE.size(), DKJSON_BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
+	if (jsonError) {
+		resultStr = ReadLuaResponse(L, jsonError);
+	}
+
+	for (idx_t i = 0; i < args.size(); i++) {
+		if (!scriptData.validity.RowIsValid(scriptData.sel->get_index(i)) ||
+		    !argData.validity.RowIsValid(argData.sel->get_index(i))) {
+			// TODO
+			result_data[i] = StringVector::AddString(result, "");
+			continue;
+		}
+		if (!jsonError) {
+			// json.decode
+			auto decodeField = lua_getfield(L, -1, "decode");
+
+			auto script = scriptDataPtr[scriptData.sel->get_index(i)];
+			auto data = argDataPtr[argData.sel->get_index(i)];
+			lua_pushlstring(L, data.GetData(), data.GetSize());
+			auto decodeError = lua_pcall(L, 1, 1, 0);
+			if (decodeError) {
+				resultStr = ReadLuaResponse(L, decodeError);
+			} else {
+				lua_setglobal(L, contextVarName.c_str());
+				// json.encode, set up for encoding after
+				lua_getfield(L, -1, "encode");
+
+				// Run the user code
+				auto error =
+				    luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
+				if (error) {
+					resultStr = ReadLuaResponse(L, error);
+				} else {
+					auto encodeError = lua_pcall(L, 1, 1, 0);
+					resultStr = ReadLuaResponse(L, encodeError);
+				}
+			}
+		}
+
+		auto resultDuckdbStr = string_t(strdup(resultStr.c_str()), resultStr.size());
+
+		result_data[i] = StringVector::AddString(result, resultDuckdbStr);
+	}
+
+	lua_close(L);
+	result.Verify(args.size());
 }
 
 inline void LuaScalarVarcharFun(DataChunk &args, ExpressionState &state, Vector &result) {
@@ -135,24 +164,42 @@ inline void LuaScalarVarcharFun(DataChunk &args, ExpressionState &state, Vector 
 	state.GetContext().TryGetCurrentSetting(CONTEXT_OPTION_NAME, contextVarNameValue);
 	auto contextVarName = contextVarNameValue.GetValue<string>();
 
-	auto &script_vector = args.data[0];
-	auto &data_vector = args.data[1];
-	BinaryExecutor::Execute<string_t, string_t, string_t>(
-	    script_vector, data_vector, result, args.size(), [&](string_t script, string_t data) {
-		    lua_State *L = luaL_newstate();
-		    luaL_openlibs(L);
+	lua_State *L = luaL_newstate();
+	luaL_openlibs(L);
 
-		    lua_pushlstring(L, data.GetData(), data.GetSize());
-		    lua_setglobal(L, contextVarName.c_str());
+	UnifiedVectorFormat scriptData;
+	args.data[0].ToUnifiedFormat(args.size(), scriptData);
+	auto scriptDataPtr = UnifiedVectorFormat::GetData<string_t>(scriptData);
 
-		    // Run the user code
-		    auto error = luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
-		    auto resultStr = ReadLuaResponse(L, error);
+	UnifiedVectorFormat argData;
+	args.data[1].ToUnifiedFormat(args.size(), argData);
+	auto argDataPtr = UnifiedVectorFormat::GetData<string_t>(argData);
 
-		    lua_close(L);
+	result.SetVectorType(VectorType::FLAT_VECTOR);
+	auto result_data = FlatVector::GetData<string_t>(result);
+	for (idx_t i = 0; i < args.size(); i++) {
+		if (!scriptData.validity.RowIsValid(scriptData.sel->get_index(i)) ||
+		    !argData.validity.RowIsValid(argData.sel->get_index(i))) {
+			// TODO
+			result_data[i] = StringVector::AddString(result, "");
+			continue;
+		}
 
-		    return StringVector::AddString(result, resultStr);
-	    });
+		auto script = scriptDataPtr[scriptData.sel->get_index(i)];
+		auto data = argDataPtr[argData.sel->get_index(i)];
+		lua_pushlstring(L, data.GetData(), data.GetSize());
+		lua_setglobal(L, contextVarName.c_str());
+
+		// Run the user code
+		auto error = luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
+		auto resultStr = ReadLuaResponse(L, error);
+		auto resultDuckdbStr = string_t(strdup(resultStr.c_str()), resultStr.size());
+
+		result_data[i] = StringVector::AddString(result, resultDuckdbStr);
+	}
+
+	lua_close(L);
+	result.Verify(args.size());
 }
 
 template <typename T, bool IsInteger, bool IsBool>
@@ -161,31 +208,49 @@ inline void LuaScalarNumericFun(DataChunk &args, ExpressionState &state, Vector 
 	state.GetContext().TryGetCurrentSetting(CONTEXT_OPTION_NAME, contextVarNameValue);
 	auto contextVarName = contextVarNameValue.GetValue<string>();
 
-	auto &script_vector = args.data[0];
-	auto &data_vector = args.data[1];
-	BinaryExecutor::Execute<string_t, T, string_t>(
-	    script_vector, data_vector, result, args.size(), [&](string_t script, T data) {
-		    lua_State *L = luaL_newstate();
-		    luaL_openlibs(L);
+	lua_State *L = luaL_newstate();
+	luaL_openlibs(L);
 
-		    static_assert(!(IsBool && IsInteger), "LuaScalarNumericFun template invalid");
-		    if (IsBool) {
-			    lua_pushboolean(L, data);
-		    } else if (IsInteger) {
-			    lua_pushinteger(L, data);
-		    } else {
-			    lua_pushnumber(L, data);
-		    }
-		    lua_setglobal(L, contextVarName.c_str());
+	UnifiedVectorFormat scriptData;
+	args.data[0].ToUnifiedFormat(args.size(), scriptData);
+	auto scriptDataPtr = UnifiedVectorFormat::GetData<string_t>(scriptData);
 
-		    // Run the user code
-		    auto error = luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
-		    auto resultStr = ReadLuaResponse(L, error);
+	UnifiedVectorFormat argData;
+	args.data[1].ToUnifiedFormat(args.size(), argData);
+	auto argDataPtr = UnifiedVectorFormat::GetData<T>(argData);
 
-		    lua_close(L);
+	result.SetVectorType(VectorType::FLAT_VECTOR);
+	auto result_data = FlatVector::GetData<string_t>(result);
+	for (idx_t i = 0; i < args.size(); i++) {
+		if (!scriptData.validity.RowIsValid(scriptData.sel->get_index(i)) ||
+		    !argData.validity.RowIsValid(argData.sel->get_index(i))) {
+			// TODO
+			result_data[i] = StringVector::AddString(result, "");
+			continue;
+		}
 
-		    return StringVector::AddString(result, resultStr);
-	    });
+		auto script = scriptDataPtr[scriptData.sel->get_index(i)];
+		auto data = argDataPtr[argData.sel->get_index(i)];
+		static_assert(!(IsBool && IsInteger), "LuaScalarNumericFun template invalid");
+		if (IsBool) {
+			lua_pushboolean(L, data);
+		} else if (IsInteger) {
+			lua_pushinteger(L, data);
+		} else {
+			lua_pushnumber(L, data);
+		}
+		lua_setglobal(L, contextVarName.c_str());
+
+		// Run the user code
+		auto error = luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
+		auto resultStr = ReadLuaResponse(L, error);
+		auto resultDuckdbStr = string_t(strdup(resultStr.c_str()), resultStr.size());
+
+		result_data[i] = StringVector::AddString(result, resultDuckdbStr);
+	}
+
+	lua_close(L);
+	result.Verify(args.size());
 }
 
 static void LoadInternal(ExtensionLoader &loader) {
