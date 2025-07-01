@@ -26,9 +26,7 @@ Returns `"aabb"`.
 
 For the context parameter, you can pass in strings, integers, floats, booleans, and so on. Except for JSON input, the return type will be VARCHAR. If an error is encountered, the error message will be returned instead. If you pass in JSON type data, it will be deserialized for you on the Lua side and the Lua return value will also be JSON serialized.
 
-Please see the issues for important current performance limitations of this extension.
-
-You may wish to rename the `context` variable, if so use the following option:
+If you wish to rename the `context` variable, use the following option:
 ```sql
 SET lua_context_name = 'ctx';
 SELECT lua('return ctx', 'abc');

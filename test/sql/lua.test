@@ -42,3 +42,39 @@ query I
 SELECT lua('aaa');
 ----
 [string "line"]:1: syntax error near <eof>
+
+query I
+SELECT lua('return "abc"') FROM range(0, 5) tbl(i);
+----
+abc
+abc
+abc
+abc
+abc
+
+query II
+SELECT lua('return "abc"'), i FROM range(0, 5) tbl(i);
+----
+abc	0
+abc	1
+abc	2
+abc	3
+abc	4
+
+query I
+SELECT lua('return "abc' || cast(i as varchar) || '"') FROM range(0, 5) tbl(i);
+----
+abc0
+abc1
+abc2
+abc3
+abc4
+
+query I
+SELECT lua(if(i < 3, 'return "abc' || cast(i as varchar) || '"', null)) FROM range(0, 5) tbl(i);
+----
+abc0
+abc1
+abc2
+NULL
+NULL
