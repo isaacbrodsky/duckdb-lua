@@ -1,14 +1,11 @@
 [![Extension Test](https://github.com/isaacbrodsky/duckdb-lua/actions/workflows/MainDistributionPipeline.yml/badge.svg)](https://github.com/isaacbrodsky/duckdb-lua/actions/workflows/MainDistributionPipeline.yml)
-<!-- [![DuckDB Version](https://img.shields.io/static/v1?label=duckdb&message=v1.4.0&color=blue)](https://github.com/duckdb/duckdb/releases/tag/v1.4.0) -->
+[![DuckDB Version](https://img.shields.io/static/v1?label=duckdb&message=v1.4.0&color=blue)](https://github.com/duckdb/duckdb/releases/tag/v1.4.0)
 [![Lua Version](https://img.shields.io/static/v1?label=lua&message=v5.4.8&color=blue)](https://lua.org/home.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 # Lua
 
 This extension adds the embedded scripting language [Lua](https://lua.org) to [DuckDB](https://duckdb.org/). Lua is a powerful, small, embedded, and free scripting language.
-
-> [!NOTE]
-> This extension has not been released to community extensions yet. That is *Coming Soon™*, pending the release of DuckDB 1.4.0. In the mean time, build this extension with latest [duckdb/duckdb](https://github.com/duckdb/duckdb).
 
 Install via community extensions:
 
