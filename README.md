@@ -16,10 +16,10 @@ LOAD loa;
 
 Evaluate a Lua expression in SQL:
 ```sql
-SELECT lua('return "aa" .. context', "bb");
+SELECT lua('return "a" .. context', 'b');
 ```
 
-Returns `"aabb"`.
+Returns `"ab"`.
 
 For the context parameter, you can pass in strings, integers, floats, booleans, and so on. Except for JSON input, the return type will be VARCHAR. If an error is encountered, the error message will be returned instead. If you pass in JSON type data, it will be deserialized for you on the Lua side and the Lua return value will also be JSON serialized.
 
