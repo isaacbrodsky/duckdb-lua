@@ -1,5 +1,5 @@
 [![Extension Test](https://github.com/isaacbrodsky/duckdb-lua/actions/workflows/MainDistributionPipeline.yml/badge.svg)](https://github.com/isaacbrodsky/duckdb-lua/actions/workflows/MainDistributionPipeline.yml)
-[![DuckDB Version](https://img.shields.io/static/v1?label=duckdb&message=v1.4.2&color=blue)](https://github.com/duckdb/duckdb/releases/tag/v1.4.2)
+[![DuckDB Version](https://img.shields.io/static/v1?label=duckdb&message=v1.4.3&color=blue)](https://github.com/duckdb/duckdb/releases/tag/v1.4.3)
 [![Lua Version](https://img.shields.io/static/v1?label=lua&message=v5.4.8&color=blue)](https://lua.org/home.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -42,7 +42,7 @@ Note: VCPKG is only required for extensions that want to rely on it for dependen
 ### Build steps
 Now to build the extension, run:
 ```sh
-make
+GEN=ninja make release
 ```
 The main binaries that will be built are:
 ```sh
