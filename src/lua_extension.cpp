@@ -261,12 +261,12 @@ inline void LuaScalarNumericFun(DataChunk &args, ExpressionState &state, Vector 
 	result.Verify();
 }
 
-template <LogicalTypeId ARG, typename T>
+template <LogicalTypeId ARG, typename T, bool IsInteger, bool IsBool>
 static ScalarFunction MakeNumericLuaFunction(FunctionStability stability) {
-	auto function =
-	    ScalarFunction("lua", {LogicalType::VARCHAR, ARG}, LogicalType::VARCHAR, LuaScalarNumericFun<T, false, false>);
+	auto function = ScalarFunction("lua", {LogicalType::VARCHAR, ARG}, LogicalType::VARCHAR,
+	                               LuaScalarNumericFun<T, IsInteger, IsBool>);
 	function.SetStability(stability);
-	lua_scalar_function.SetNullHandling(FunctionNullHandling::SPECIAL_HANDLING);
+	function.SetNullHandling(FunctionNullHandling::SPECIAL_HANDLING);
 	return function;
 }
 
@@ -295,17 +295,17 @@ static void LoadInternal(ExtensionLoader &loader) {
 	lua_scalar_function_json.SetNullHandling(FunctionNullHandling::SPECIAL_HANDLING);
 	lua_scalar_functions.AddFunction(lua_scalar_function_json);
 
-	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::FLOAT, float>(stability));
-	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::DOUBLE, double>(stability));
-	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::TINYINT, int8_t>(stability));
-	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::UTINYINT, uint8_t>(stability));
-	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::SMALLINT, int16_t>(stability));
-	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::USMALLINT, uint16_t>(stability));
-	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::INTEGER, int32_t>(stability));
-	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::UINTEGER, uint32_t>(stability));
-	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::BIGINT, int64_t>(stability));
-	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::UBIGINT, uint64_t>(stability));
-	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::BOOLEAN, bool>(stability));
+	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::FLOAT, float, false, false>(stability));
+	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::DOUBLE, double, false, false>(stability));
+	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::TINYINT, int8_t, true, false>(stability));
+	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::UTINYINT, uint8_t, true, false>(stability));
+	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::SMALLINT, int16_t, true, false>(stability));
+	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::USMALLINT, uint16_t, true, false>(stability));
+	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::INTEGER, int32_t, true, false>(stability));
+	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::UINTEGER, uint32_t, true, false>(stability));
+	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::BIGINT, int64_t, true, false>(stability));
+	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::UBIGINT, uint64_t, true, false>(stability));
+	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::BOOLEAN, bool, false, true>(stability));
 
 	loader.RegisterFunction(lua_scalar_functions);
 
