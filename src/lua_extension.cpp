@@ -2,12 +2,6 @@
 
 #include "lua_extension.hpp"
 #include "dkjson.hpp"
-#include "duckdb.hpp"
-#include "duckdb/common/exception.hpp"
-#include "duckdb/common/string_util.hpp"
-#include "duckdb/function/scalar_function.hpp"
-#include "duckdb/main/extension/extension_loader.hpp"
-#include <duckdb/parser/parsed_data/create_scalar_function_info.hpp>
 #include <string.h>
 
 extern "C" {
@@ -15,8 +9,6 @@ extern "C" {
 #include <lauxlib.h>
 #include <lualib.h>
 }
-
-namespace duckdb {
 
 const auto BUFFER_NAME = "line";
 const auto CONTEXT_OPTION_NAME = "lua_context_name";
@@ -34,16 +26,16 @@ inline std::string ReadLuaResponse(lua_State *L, bool error) {
 			resultStr = lua_tostring(L, -1);
 			lua_pop(L, 1);
 		} else if (lua_isinteger(L, -1)) {
-			resultStr = StringUtil::Format("%d", lua_tointeger(L, -1));
+			resultStr = std::to_string(lua_tointeger(L, -1));
 			lua_pop(L, 1);
 		} else if (lua_isnumber(L, -1)) {
-			resultStr = StringUtil::Format("%f", lua_tonumber(L, -1));
+			resultStr = std::to_string(lua_tonumber(L, -1));
 			lua_pop(L, 1);
 		} else if (lua_isboolean(L, -1)) {
 			resultStr = lua_toboolean(L, -1) ? "true" : "false";
 			lua_pop(L, 1);
 		} else {
-			resultStr = StringUtil::Format("Unknown type: %s", lua_typename(L, -1));
+			resultStr = std::string("Unknown type: ") + lua_typename(L, -1);
 			lua_pop(L, 1);
 		}
 	}
@@ -262,7 +254,7 @@ inline void LuaScalarNumericFun(DataChunk &args, ExpressionState &state, Vector 
 }
 
 static void LoadInternal(ExtensionLoader &loader) {
-	loader.SetDescription(StringUtil::Format("Lua embedded scripting language, %s", LUA_RELEASE));
+	loader.SetDescription("Lua embedded scripting language, " LUA_RELEASE);
 
 	ScalarFunctionSet lua_scalar_functions("lua");
 
@@ -352,11 +344,13 @@ std::string LuaExtension::Version() const {
 #endif
 }
 
-} // namespace duckdb
-
 extern "C" {
 
-DUCKDB_CPP_EXTENSION_ENTRY(lua, loader) {
-	duckdb::LoadInternal(loader);
+DUCKDB_EXTENSION_ENTRYPOINT(duckdb_connection connection, duckdb_extension_info info, struct duckdb_extension_access *access) {
+        RegisterLuaFunctions(connection);
+
+        // Return true to indicate succesful initialization
+        return true;
 }
+
 }

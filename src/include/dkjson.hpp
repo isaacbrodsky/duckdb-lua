@@ -1,5 +1,5 @@
 #pragma once
-#include <string.h>
+#include <string>
 
 const auto DKJSON_BUFFER_NAME = "dkjson.lua";
 
