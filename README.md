@@ -83,6 +83,8 @@ duckdb-lua Copyright 2025 Isaac Brodsky. Licensed under the [MIT License](./LICE
 
 [DuckDB extension-template](https://github.com/duckdb/extension-template) Copyright 2018-2022 DuckDB Labs BV (MIT License)
 
+[DuckDB extension-template-c](https://github.com/duckdb/extension-template-c)
+
 [Lua](https://lua.org/license.html) Copyright © 1994–2025 Lua.org, PUC-Rio. (MIT License)
 
 [dkjson](https://dkolf.de/dkjson-lua/) Copyright (C) 2010-2024 David Heiko Kolf (MIT License)
