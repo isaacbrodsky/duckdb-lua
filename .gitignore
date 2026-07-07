@@ -12,6 +12,5 @@ vcpkg/
 
 cmake_build
 configure
-duckdb_unittest_tempdir
 /test/bin
 venv

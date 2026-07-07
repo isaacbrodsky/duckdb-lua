@@ -1,4 +1,4 @@
-.PHONY: clean clean_all
+.PHONY: clean clean_all format-check format format-fix
 
 PROJ_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
@@ -30,3 +30,13 @@ test_release: test_extension_release
 
 clean: clean_build clean_cmake
 clean_all: clean clean_configure
+
+format-check:
+	python3 duckdb/scripts/format.py --all --check --directories src test
+
+format:
+	python3 duckdb/scripts/format.py --all --fix --noconfirm --directories src test
+
+format-fix:
+	python3 duckdb/scripts/format.py --all --fix --noconfirm --directories src test
+

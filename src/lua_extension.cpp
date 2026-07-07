@@ -42,13 +42,14 @@ inline std::string ReadLuaResponse(lua_State *L, bool error) {
 	return resultStr;
 }
 
-DUCKDB_EXTENSION_EXTERN inline void LuaScalarFun(duckdb_function_info info, duckdb_data_chunk input, duckdb_vector output) {
+DUCKDB_EXTENSION_EXTERN inline void LuaScalarFun(duckdb_function_info info, duckdb_data_chunk input,
+                                                 duckdb_vector output) {
 	idx_t inputSize = duckdb_data_chunk_get_size(input);
 
-        // Unsupported: settings
-	//Value contextVarNameValue = Value(LogicalType::VARCHAR);
-	//state.GetContext().TryGetCurrentSetting(CONTEXT_OPTION_NAME, contextVarNameValue);
-	auto contextVarName = std::string("context");//contextVarNameValue.GetValue<string>();
+	// Unsupported: settings
+	// Value contextVarNameValue = Value(LogicalType::VARCHAR);
+	// state.GetContext().TryGetCurrentSetting(CONTEXT_OPTION_NAME, contextVarNameValue);
+	auto contextVarName = std::string("context"); // contextVarNameValue.GetValue<string>();
 
 	lua_State *L = luaL_newstate();
 	luaL_openlibs(L);
@@ -57,23 +58,25 @@ DUCKDB_EXTENSION_EXTERN inline void LuaScalarFun(duckdb_function_info info, duck
 	lua_setglobal(L, contextVarName.c_str());
 
 	duckdb_vector scripts = duckdb_data_chunk_get_vector(input, 0);
-//	UnifiedVectorFormat scriptData;
-//	args.data[0].ToUnifiedFormat(args.size(), scriptData);
-//	auto scriptDataPtr = UnifiedVectorFormat::GetData<string_t>(scriptData);
-	duckdb_string_t* scriptData = (duckdb_string_t*)duckdb_vector_get_data(scripts);
-	uint64_t* scriptValidity = duckdb_vector_get_validity(scripts);
+	//	UnifiedVectorFormat scriptData;
+	//	args.data[0].ToUnifiedFormat(args.size(), scriptData);
+	//	auto scriptDataPtr = UnifiedVectorFormat::GetData<string_t>(scriptData);
+	duckdb_string_t *scriptData = (duckdb_string_t *)duckdb_vector_get_data(scripts);
+	uint64_t *scriptValidity = duckdb_vector_get_validity(scripts);
 
 	if (scriptValidity) {
 		// if scriptValidity is defined there might be NULL values
 		duckdb_vector_ensure_validity_writable(output);
-		uint64_t* result_validity = duckdb_vector_get_validity(output);
+		uint64_t *result_validity = duckdb_vector_get_validity(output);
 		for (idx_t row = 0; row < inputSize; row++) {
 			if (duckdb_validity_row_is_valid(scriptValidity, row)) {
 				auto script = &scriptData[row];
-				auto error = luaL_loadbuffer(L, duckdb_string_t_data(script), duckdb_string_t_length(*script), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
+				auto error =
+				    luaL_loadbuffer(L, duckdb_string_t_data(script), duckdb_string_t_length(*script), BUFFER_NAME) ||
+				    lua_pcall(L, 0, 1, 0);
 				auto resultStr = ReadLuaResponse(L, error);
 
-				duckdb_vector_assign_string_element(output, row,resultStr.c_str());
+				duckdb_vector_assign_string_element(output, row, resultStr.c_str());
 			} else {
 				// either a or b is NULL - set the result row to NULL
 				duckdb_validity_set_row_invalid(result_validity, row);
@@ -82,16 +85,18 @@ DUCKDB_EXTENSION_EXTERN inline void LuaScalarFun(duckdb_function_info info, duck
 	} else {
 		// no NULL values - iterate and do the operation directly
 		for (idx_t row = 0; row < inputSize; row++) {
-                        auto script = &scriptData[row];
-			auto error = luaL_loadbuffer(L, duckdb_string_t_data(script), duckdb_string_t_length(*script), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
+			auto script = &scriptData[row];
+			auto error =
+			    luaL_loadbuffer(L, duckdb_string_t_data(script), duckdb_string_t_length(*script), BUFFER_NAME) ||
+			    lua_pcall(L, 0, 1, 0);
 			auto resultStr = ReadLuaResponse(L, error);
 
-			duckdb_vector_assign_string_element(output, row,resultStr.c_str());
+			duckdb_vector_assign_string_element(output, row, resultStr.c_str());
 		}
 	}
 }
 
-//inline void LuaScalarJsonFun(DataChunk &args, ExpressionState &state, Vector &result) {
+// inline void LuaScalarJsonFun(DataChunk &args, ExpressionState &state, Vector &result) {
 //	Value contextVarNameValue = Value(LogicalType::VARCHAR);
 //	state.GetContext().TryGetCurrentSetting(CONTEXT_OPTION_NAME, contextVarNameValue);
 //	auto contextVarName = contextVarNameValue.GetValue<string>();
@@ -166,7 +171,7 @@ DUCKDB_EXTENSION_EXTERN inline void LuaScalarFun(duckdb_function_info info, duck
 //	result.Verify(args.size());
 //}
 //
-//inline void LuaScalarVarcharFun(DataChunk &args, ExpressionState &state, Vector &result) {
+// inline void LuaScalarVarcharFun(DataChunk &args, ExpressionState &state, Vector &result) {
 //	Value contextVarNameValue = Value(LogicalType::VARCHAR);
 //	state.GetContext().TryGetCurrentSetting(CONTEXT_OPTION_NAME, contextVarNameValue);
 //	auto contextVarName = contextVarNameValue.GetValue<string>();
@@ -212,8 +217,8 @@ DUCKDB_EXTENSION_EXTERN inline void LuaScalarFun(duckdb_function_info info, duck
 //	result.Verify(args.size());
 //}
 //
-//template <typename T, bool IsInteger, bool IsBool>
-//inline void LuaScalarNumericFun(DataChunk &args, ExpressionState &state, Vector &result) {
+// template <typename T, bool IsInteger, bool IsBool>
+// inline void LuaScalarNumericFun(DataChunk &args, ExpressionState &state, Vector &result) {
 //	Value contextVarNameValue = Value(LogicalType::VARCHAR);
 //	state.GetContext().TryGetCurrentSetting(CONTEXT_OPTION_NAME, contextVarNameValue);
 //	auto contextVarName = contextVarNameValue.GetValue<string>();
@@ -266,7 +271,7 @@ DUCKDB_EXTENSION_EXTERN inline void LuaScalarFun(duckdb_function_info info, duck
 //	result.Verify(args.size());
 //}
 
-//static void LoadInternal(ExtensionLoader &loader) {
+// static void LoadInternal(ExtensionLoader &loader) {
 //	loader.SetDescription("Lua embedded scripting language, " LUA_RELEASE);
 //
 //	ScalarFunctionSet lua_scalar_functions("lua");
@@ -342,14 +347,14 @@ DUCKDB_EXTENSION_EXTERN inline void LuaScalarFun(duckdb_function_info info, duck
 //	                          LogicalType::VARCHAR, Value("context"));
 //}
 //
-//void LuaExtension::Load(ExtensionLoader &loader) {
+// void LuaExtension::Load(ExtensionLoader &loader) {
 //	LoadInternal(loader);
 //}
-//std::string LuaExtension::Name() {
+// std::string LuaExtension::Name() {
 //	return "lua";
 //}
 //
-//std::string LuaExtension::Version() const {
+// std::string LuaExtension::Version() const {
 //#ifdef EXT_VERSION_LUA
 //	return EXT_VERSION_LUA;
 //#else
@@ -377,11 +382,12 @@ void RegisterLuaFunctions(duckdb_connection connection) {
 	// register and cleanup
 	duckdb_register_scalar_function(connection, function);
 	duckdb_destroy_scalar_function(&function);
-  }
+}
 
-DUCKDB_EXTENSION_ENTRYPOINT(duckdb_connection connection, duckdb_extension_info info, struct duckdb_extension_access *access) {
-        RegisterLuaFunctions(connection);
+DUCKDB_EXTENSION_ENTRYPOINT(duckdb_connection connection, duckdb_extension_info info,
+                            struct duckdb_extension_access *access) {
+	RegisterLuaFunctions(connection);
 
-        // Return true to indicate succesful initialization
-        return true;
+	// Return true to indicate succesful initialization
+	return true;
 }
