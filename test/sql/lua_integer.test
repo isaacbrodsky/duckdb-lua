@@ -89,7 +89,7 @@ SELECT lua('return context', -5::bigint);
 query I
 SELECT lua('return context', 5::ubigint);
 ----
-5.0
+5
 
 query I
 SELECT lua('if context then return "a" else return "b" end', true);
