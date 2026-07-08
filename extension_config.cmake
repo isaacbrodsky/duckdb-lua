@@ -4,6 +4,7 @@
 duckdb_extension_load(lua
     SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}
     LOAD_TESTS
+    LINKED_LIBS "$<TARGET_FILE:lua>"
 )
 
 # Any extra extensions that should be built
