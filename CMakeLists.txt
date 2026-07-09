@@ -33,11 +33,15 @@ set(EXTENSION_SOURCES
         src/lua_extension.cpp
 )
 
+# Conflicts with Lua dependency
+set(EXTENSION_TARGET_NAME "${EXTENSION_NAME}_ext")
 if (DUCKDB_WASM_EXTENSION)
-	add_library(${EXTENSION_NAME} STATIC ${EXTENSION_SOURCES})
+	add_library(${EXTENSION_TARGET_NAME} STATIC ${EXTENSION_SOURCES})
 else()
-	add_library(${EXTENSION_NAME} SHARED ${EXTENSION_SOURCES})
+	add_library(${EXTENSION_TARGET_NAME} SHARED ${EXTENSION_SOURCES})
 endif()
+
+set_target_properties(${EXTENSION_TARGET_NAME} PROPERTIES OUTPUT_NAME ${EXTENSION_NAME})
 
 # Hide symbols
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -47,11 +51,11 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -s")
 
 # Include own headers
-target_include_directories(${EXTENSION_NAME} PRIVATE src/include)
+target_include_directories(${EXTENSION_TARGET_NAME} PRIVATE src/include)
 
 # Include DuckDB C API headers
-target_include_directories(${EXTENSION_NAME} PRIVATE duckdb_capi)
+target_include_directories(${EXTENSION_TARGET_NAME} PRIVATE duckdb_capi)
 
 find_package(Lua REQUIRED)
-target_include_directories(${EXTENSION_NAME} PRIVATE ${LUA_INCLUDE_DIR})
-target_link_libraries(${EXTENSION_NAME} PRIVATE ${LUA_LIBRARIES})
+target_include_directories(${EXTENSION_TARGET_NAME} PRIVATE ${LUA_INCLUDE_DIR})
+target_link_libraries(${EXTENSION_TARGET_NAME} PRIVATE ${LUA_LIBRARIES})
