@@ -10,3 +10,7 @@ vcpkg/
 .vscode/
 .cache/
 
+cmake_build
+configure
+/test/bin
+venv
