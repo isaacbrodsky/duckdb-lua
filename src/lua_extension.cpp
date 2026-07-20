@@ -19,7 +19,11 @@ const auto CONTEXT_OPTION_NAME = "lua_context_name";
 inline static std::string ReadLuaResponse(lua_State *L, bool error) {
 	std::string resultStr;
 	if (error) {
-		resultStr = lua_tostring(L, -1);
+		if (lua_isstring(L, -1)) {
+			resultStr = lua_tostring(L, -1);
+		} else {
+			resultStr = std::string("Unknown Error: ") + lua_typename(L, -1);
+		}
 		lua_pop(L, 1);
 	} else {
 		if (lua_isnoneornil(L, -1)) {
@@ -60,9 +64,6 @@ void LuaScalarFun(duckdb_function_info info, duckdb_data_chunk input, duckdb_vec
 	lua_setglobal(L, contextVarName.c_str());
 
 	duckdb_vector scripts = duckdb_data_chunk_get_vector(input, 0);
-	//	UnifiedVectorFormat scriptData;
-	//	args.data[0].ToUnifiedFormat(args.size(), scriptData);
-	//	auto scriptDataPtr = UnifiedVectorFormat::GetData<string_t>(scriptData);
 	duckdb_string_t *scriptData = (duckdb_string_t *)duckdb_vector_get_data(scripts);
 	uint64_t *scriptValidity = duckdb_vector_get_validity(scripts);
 
@@ -188,6 +189,8 @@ void LuaScalarJsonFun(duckdb_function_info info, duckdb_data_chunk input, duckdb
 		for (idx_t row = 0; row < inputSize; row++) {
 			duckdb_vector_assign_string_element(output, row, resultStr.c_str());
 		}
+
+		lua_close(L);
 		return;
 	}
 
