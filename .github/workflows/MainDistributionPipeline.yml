@@ -24,8 +24,8 @@ jobs:
     name: Build extension binaries (stable)
     uses: duckdb/extension-ci-tools/.github/workflows/_extension_distribution.yml@v1.5-variegata
     with:
-      duckdb_version: v1.5.4
-      ci_tools_version: v1.5-variegata
+      duckdb_version: v1.5.5
+      ci_tools_version: v1.5.5
       extension_name: lua
 
   code-quality-check:
@@ -33,6 +33,6 @@ jobs:
     uses: duckdb/extension-ci-tools/.github/workflows/_extension_code_quality.yml@v1.5-variegata
     with:
       duckdb_version: v1.5.4
-      ci_tools_version: v1.5-variegata
+      ci_tools_version: v1.5.5
       extension_name: lua
       format_checks: 'format' # ';tidy' doesn't work with vcpkg
