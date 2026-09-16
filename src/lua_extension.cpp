@@ -304,7 +304,8 @@ static void LoadInternal(ExtensionLoader &loader) {
 	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::INTEGER, int32_t, true, false>(stability));
 	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::UINTEGER, uint32_t, true, false>(stability));
 	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::BIGINT, int64_t, true, false>(stability));
-	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::UBIGINT, uint64_t, true, false>(stability));
+	// Note: UBIGINT is pushed as a Lua number, not Lua integer, because Lua integers are 64-bit signed.
+	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::UBIGINT, uint64_t, false, false>(stability));
 	lua_scalar_functions.AddFunction(MakeNumericLuaFunction<LogicalType::BOOLEAN, bool, false, true>(stability));
 
 	loader.RegisterFunction(lua_scalar_functions);
