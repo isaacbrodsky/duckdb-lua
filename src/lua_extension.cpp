@@ -77,9 +77,8 @@ inline void LuaScalarFun(DataChunk &args, ExpressionState &state, Vector &result
 		auto script = scriptDataPtr[scriptData.sel->get_index(i)];
 		auto error = luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
 		auto resultStr = ReadLuaResponse(L, error);
-		auto resultDuckdbStr = string_t(strdup(resultStr.c_str()), resultStr.size());
 
-		result_data[i] = StringVector::AddString(result, resultDuckdbStr);
+		result_data[i] = StringVector::AddString(result, resultStr);
 	}
 
 	lua_close(L);
@@ -152,9 +151,7 @@ inline void LuaScalarJsonFun(DataChunk &args, ExpressionState &state, Vector &re
 			}
 		}
 
-		auto resultDuckdbStr = string_t(strdup(resultStr.c_str()), resultStr.size());
-
-		result_data[i] = StringVector::AddString(result, resultDuckdbStr);
+		result_data[i] = StringVector::AddString(result, resultStr);
 	}
 
 	lua_close(L);
@@ -198,9 +195,8 @@ inline void LuaScalarVarcharFun(DataChunk &args, ExpressionState &state, Vector 
 		// Run the user code
 		auto error = luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
 		auto resultStr = ReadLuaResponse(L, error);
-		auto resultDuckdbStr = string_t(strdup(resultStr.c_str()), resultStr.size());
 
-		result_data[i] = StringVector::AddString(result, resultDuckdbStr);
+		result_data[i] = StringVector::AddString(result, resultStr);
 	}
 
 	lua_close(L);
@@ -252,9 +248,8 @@ inline void LuaScalarNumericFun(DataChunk &args, ExpressionState &state, Vector 
 		// Run the user code
 		auto error = luaL_loadbuffer(L, script.GetData(), script.GetSize(), BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
 		auto resultStr = ReadLuaResponse(L, error);
-		auto resultDuckdbStr = string_t(strdup(resultStr.c_str()), resultStr.size());
 
-		result_data[i] = StringVector::AddString(result, resultDuckdbStr);
+		result_data[i] = StringVector::AddString(result, resultStr);
 	}
 
 	lua_close(L);
