@@ -36,8 +36,8 @@ if (ENABLE_COVERAGE)
     message("Coverage enabled")
     target_compile_options(${EXTENSION_NAME} PRIVATE --coverage)
     target_compile_options(${LOADABLE_EXTENSION_NAME} PRIVATE --coverage)
-    target_link_options(${EXTENSION_NAME} PRIVATE --coverage)
-    target_link_options(${LOADABLE_EXTENSION_NAME} PRIVATE --coverage)
+    target_link_options(${EXTENSION_NAME} PUBLIC --coverage)
+    target_link_options(${LOADABLE_EXTENSION_NAME} PUBLIC --coverage)
     file(
             GENERATE
             OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/scripts/coverage.sh"
