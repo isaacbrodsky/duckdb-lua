@@ -354,5 +354,4 @@ extern "C" {
 DUCKDB_CPP_EXTENSION_ENTRY(lua, loader) {
 	duckdb::LoadInternal(loader);
 }
-
 }
