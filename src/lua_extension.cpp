@@ -31,19 +31,16 @@ inline std::string ReadLuaResponse(lua_State *L, bool error) {
 			resultStr = "nil";
 			lua_pop(L, 1);
 		} else if (lua_isstring(L, -1)) {
+			// Also covers number and integer types, since lua_isstring checks whether
+			// the type can be coerced to string, and that includes numbers by default.
 			resultStr = lua_tostring(L, -1);
-			lua_pop(L, 1);
-		} else if (lua_isinteger(L, -1)) {
-			resultStr = StringUtil::Format("%d", lua_tointeger(L, -1));
-			lua_pop(L, 1);
-		} else if (lua_isnumber(L, -1)) {
-			resultStr = StringUtil::Format("%f", lua_tonumber(L, -1));
 			lua_pop(L, 1);
 		} else if (lua_isboolean(L, -1)) {
 			resultStr = lua_toboolean(L, -1) ? "true" : "false";
 			lua_pop(L, 1);
 		} else {
-			resultStr = StringUtil::Format("Unknown type: %s", lua_typename(L, -1));
+			auto type = lua_type(L, -1);
+			resultStr = StringUtil::Format("Unknown type: %s", lua_typename(L, type));
 			lua_pop(L, 1);
 		}
 	}
@@ -357,4 +354,5 @@ extern "C" {
 DUCKDB_CPP_EXTENSION_ENTRY(lua, loader) {
 	duckdb::LoadInternal(loader);
 }
+
 }
