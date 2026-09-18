@@ -25,9 +25,19 @@ SELECT lua('return context["hello"]', {'hello':'world'}::json);
 "world"
 
 query I
+SELECT lua(NULL, {'hello':'world'}::json);
+----
+NULL
+
+query I
 SELECT lua('return context', {'hello':'world'}::json);
 ----
 {"hello":"world"}
+
+query I
+SELECT lua('function fn() return "Can not serialize function" end; return fn', {'hello':'world'}::json);
+----
+type 'function' is not supported by JSON.
 
 query I
 SELECT lua('return {context["hello"], 123}', {'hello':'world'}::json);

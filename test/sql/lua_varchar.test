@@ -12,6 +12,11 @@ Catalog Error: Scalar Function with name lua does not exist!
 require lua
 
 query I
+SELECT lua(NULL, 'abc');
+----
+NULL
+
+query I
 SELECT lua('return context', 'abc');
 ----
 abc

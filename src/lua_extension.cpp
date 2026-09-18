@@ -31,19 +31,16 @@ inline std::string ReadLuaResponse(lua_State *L, bool error) {
 			resultStr = "nil";
 			lua_pop(L, 1);
 		} else if (lua_isstring(L, -1)) {
+			// Also covers number and integer types, since lua_isstring checks whether
+			// the type can be coerced to string, and that includes numbers by default.
 			resultStr = lua_tostring(L, -1);
-			lua_pop(L, 1);
-		} else if (lua_isinteger(L, -1)) {
-			resultStr = StringUtil::Format("%d", lua_tointeger(L, -1));
-			lua_pop(L, 1);
-		} else if (lua_isnumber(L, -1)) {
-			resultStr = StringUtil::Format("%f", lua_tonumber(L, -1));
 			lua_pop(L, 1);
 		} else if (lua_isboolean(L, -1)) {
 			resultStr = lua_toboolean(L, -1) ? "true" : "false";
 			lua_pop(L, 1);
 		} else {
-			resultStr = StringUtil::Format("Unknown type: %s", lua_typename(L, -1));
+			auto type = lua_type(L, -1);
+			resultStr = StringUtil::Format("Unknown type: %s", lua_typename(L, type));
 			lua_pop(L, 1);
 		}
 	}
@@ -111,6 +108,7 @@ inline void LuaScalarJsonFun(DataChunk &args, ExpressionState &state, Vector &re
 	auto jsonError =
 	    luaL_loadbuffer(L, DKJSON_SOURCE.c_str(), DKJSON_SOURCE.size(), DKJSON_BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
 	if (jsonError) {
+		// Should not be reachable
 		resultStr = ReadLuaResponse(L, jsonError);
 	}
 
@@ -132,6 +130,8 @@ inline void LuaScalarJsonFun(DataChunk &args, ExpressionState &state, Vector &re
 				lua_pushnil(L);
 			}
 			if (decodeError) {
+				// Unclear how this could be reachable, as JSON type should always
+				// be valid JSON.
 				resultStr = ReadLuaResponse(L, decodeError);
 			} else {
 				lua_setglobal(L, contextVarName.c_str());

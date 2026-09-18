@@ -2,6 +2,7 @@
 [![DuckDB Version](https://img.shields.io/static/v1?label=duckdb&message=v1.5.5&color=blue)](https://github.com/duckdb/duckdb/releases/tag/v1.5.5)
 [![Lua Version](https://img.shields.io/static/v1?label=lua&message=v5.4.8&color=blue)](https://lua.org/home.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![codecov](https://codecov.io/gh/isaacbrodsky/duckdb-lua/graph/badge.svg?token=VTW5PTETLY)](https://codecov.io/gh/isaacbrodsky/duckdb-lua)
 
 # Lua
 
@@ -34,10 +35,12 @@ SELECT lua('return ctx', 'abc');
 DuckDB extensions uses VCPKG for dependency management. Enabling VCPKG is very simple: follow the [installation instructions](https://vcpkg.io/en/getting-started) or just run the following:
 ```shell
 git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+git checkout cd61e1e26a038e82d6550a3ebbe0fbbfe7da78e3
+cd ..
 ./vcpkg/bootstrap-vcpkg.sh
 export VCPKG_TOOLCHAIN_PATH=`pwd`/vcpkg/scripts/buildsystems/vcpkg.cmake
 ```
-Note: VCPKG is only required for extensions that want to rely on it for dependency management. If you want to develop an extension without dependencies, or want to do your own dependency management, just skip this step. Note that the example extension uses VCPKG to build with a dependency for instructive purposes, so when skipping this step the build may not work without removing the dependency.
 
 ### Build steps
 Now to build the extension, run:
