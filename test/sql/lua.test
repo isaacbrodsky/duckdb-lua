@@ -25,7 +25,7 @@ aabb
 query I
 SELECT lua('return _VERSION');
 ----
-Lua 5.4
+Lua 5.5
 
 query I
 SELECT lua('return 1 > 2');
@@ -47,6 +47,11 @@ query I
 SELECT lua('aaa');
 ----
 [string "line"]:1: syntax error near <eof>
+
+query I
+SELECT lua('error({})');
+----
+Unknown error: table
 
 query I
 SELECT lua('return "abc"') FROM range(0, 5) tbl(i);
