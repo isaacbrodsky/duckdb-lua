@@ -26,9 +26,6 @@ jobs:
           sudo apt update
           sudo apt-get install lcov
 
-      - name: Configure
-        run: make configure
-
       - name: Coverage
         run: make coverage
 
