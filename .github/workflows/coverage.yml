@@ -15,6 +15,10 @@ jobs:
   coverage:
     name: coverage
     runs-on: ubuntu-latest
+    env:
+      VCPKG_TOOLCHAIN_PATH: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+      VCPKG_TARGET_TRIPLET: x64-linux-release
+      VCPKG_HOST_TRIPLET: x64-linux-release
 
     steps:
       - uses: actions/checkout@v6
