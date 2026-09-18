@@ -15,10 +15,6 @@ jobs:
   coverage:
     name: coverage
     runs-on: ubuntu-latest
-    env:
-      VCPKG_TOOLCHAIN_PATH: ${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
-      VCPKG_TARGET_TRIPLET: x64-linux-release
-      VCPKG_HOST_TRIPLET: x64-linux-release
 
     steps:
       - uses: actions/checkout@v6
@@ -29,6 +25,20 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get install lcov
+
+      - name: Setup vcpkg
+        run: |
+          mkdir local_vcpkg_installation
+          cmake --version
+          cd local_vcpkg_installation
+          git init
+          git remote add origin "https://github.com/microsoft/vcpkg.git"
+          git fetch origin 84bab45d415d22042bd0b9081aea57f362da3f35
+          git checkout 84bab45d415d22042bd0b9081aea57f362da3f35
+          ./bootstrap-vcpkg.sh
+          echo "VCPKG_ROOT=${{ github.workspace }}/local_vcpkg_installation" >> $GITHUB_ENV
+          echo "VCPKG_TOOLCHAIN_PATH=${{ github.workspace }}/local_vcpkg_installation/scripts/buildsystems/vcpkg.cmake" >> $GITHUB_ENV
+          echo "${{ github.workspace }}/local_vcpkg_installation" >> $GITHUB_PATH
 
       - name: Coverage
         run: make coverage

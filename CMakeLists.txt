@@ -31,18 +31,13 @@ install(
   LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
   ARCHIVE DESTINATION "${INSTALL_LIB_DIR}")
 
-option(ENABLE_UBSAN "Build with UBSan" OFF)
-if (ENABLE_UBSAN)
-    message("UBSan enabled")
-    target_compile_options(${TARGET_NAME} PRIVATE -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer)
-    target_link_options(${TARGET_NAME} PRIVATE -fsanitize=undefined)
-endif()
-
 option(ENABLE_COVERAGE "Build with coverage" OFF)
 if (ENABLE_COVERAGE)
     message("Coverage enabled")
-    target_compile_options(${TARGET_NAME} PRIVATE --coverage)
-    target_link_options(${TARGET_NAME} PRIVATE --coverage)
+    target_compile_options(${EXTENSION_NAME} PRIVATE --coverage)
+    target_compile_options(${LOADABLE_EXTENSION_NAME} PRIVATE --coverage)
+    target_link_options(${EXTENSION_NAME} PRIVATE --coverage)
+    target_link_options(${LOADABLE_EXTENSION_NAME} PRIVATE --coverage)
     file(
             GENERATE
             OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/scripts/coverage.sh"
