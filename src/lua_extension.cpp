@@ -24,8 +24,14 @@ const auto CONTEXT_OPTION_NAME = "lua_context_name";
 inline std::string ReadLuaResponse(lua_State *L, bool error) {
 	std::string resultStr;
 	if (error) {
-		resultStr = lua_tostring(L, -1);
-		lua_pop(L, 1);
+		if (lua_isstring(L, -1)) {
+			resultStr = lua_tostring(L, -1);
+			lua_pop(L, 1);
+		} else {
+			auto type = lua_type(L, -1);
+			resultStr = StringUtil::Format("Unknown error: %s", lua_typename(L, type));
+			lua_pop(L, 1);
+		}
 	} else {
 		if (lua_isnoneornil(L, -1)) {
 			resultStr = "nil";

@@ -49,6 +49,11 @@ SELECT lua('aaa');
 [string "line"]:1: syntax error near <eof>
 
 query I
+SELECT lua('error({})');
+----
+Unknown error: table
+
+query I
 SELECT lua('return "abc"') FROM range(0, 5) tbl(i);
 ----
 abc
