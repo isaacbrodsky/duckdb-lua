@@ -23,6 +23,11 @@ SELECT lua('return "aa" .. "bb"');
 aabb
 
 query I
+SELECT lua('return _VERSION');
+----
+Lua 5.4
+
+query I
 SELECT lua('return 1 > 2');
 ----
 false
