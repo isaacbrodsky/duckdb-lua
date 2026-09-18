@@ -35,10 +35,12 @@ SELECT lua('return ctx', 'abc');
 DuckDB extensions uses VCPKG for dependency management. Enabling VCPKG is very simple: follow the [installation instructions](https://vcpkg.io/en/getting-started) or just run the following:
 ```shell
 git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+git checkout 84bab45d415d22042bd0b9081aea57f362da3f35
+cd ..
 ./vcpkg/bootstrap-vcpkg.sh
 export VCPKG_TOOLCHAIN_PATH=`pwd`/vcpkg/scripts/buildsystems/vcpkg.cmake
 ```
-Note: VCPKG is only required for extensions that want to rely on it for dependency management. If you want to develop an extension without dependencies, or want to do your own dependency management, just skip this step. Note that the example extension uses VCPKG to build with a dependency for instructive purposes, so when skipping this step the build may not work without removing the dependency.
 
 ### Build steps
 Now to build the extension, run:

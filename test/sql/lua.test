@@ -87,4 +87,4 @@ NULL
 query I
 SELECT lua('function fn() return "Can not serialize function" end; return fn');
 ----
-Unknown type: no value
+Unknown type: function
