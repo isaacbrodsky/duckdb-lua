@@ -111,6 +111,7 @@ inline void LuaScalarJsonFun(DataChunk &args, ExpressionState &state, Vector &re
 	auto jsonError =
 	    luaL_loadbuffer(L, DKJSON_SOURCE.c_str(), DKJSON_SOURCE.size(), DKJSON_BUFFER_NAME) || lua_pcall(L, 0, 1, 0);
 	if (jsonError) {
+		// Should not be reachable
 		resultStr = ReadLuaResponse(L, jsonError);
 	}
 
@@ -132,6 +133,8 @@ inline void LuaScalarJsonFun(DataChunk &args, ExpressionState &state, Vector &re
 				lua_pushnil(L);
 			}
 			if (decodeError) {
+				// Unclear how this could be reachable, as JSON type should always
+				// be valid JSON.
 				resultStr = ReadLuaResponse(L, decodeError);
 			} else {
 				lua_setglobal(L, contextVarName.c_str());
