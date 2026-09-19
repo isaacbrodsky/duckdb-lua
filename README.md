@@ -22,12 +22,18 @@ SELECT lua('return "a" .. context', 'b');
 
 Returns `"ab"`.
 
+For JSON input/output:
+```sql
+SELECT lua_json('return "a" .. context', '"json"'::json);
+```
+
+Returns `"ajson"`.
+
 For the context parameter, you can pass in strings, integers, floats, booleans, and so on. Except for JSON input, the return type will be VARCHAR. If an error is encountered, the error message will be returned instead. If you pass in JSON type data, it will be deserialized for you on the Lua side and the Lua return value will also be JSON serialized.
 
 If you wish to rename the `context` variable, use the following option:
 ```sql
-SET lua_context_name = 'ctx';
-SELECT lua('return ctx', 'abc');
+SELECT lua('return ctx', 'abc', 'ctx');
 ```
 
 ## Building
@@ -85,6 +91,8 @@ duckdb-lua Copyright 2025 Isaac Brodsky. Licensed under the [MIT License](./LICE
 [DuckDB](https://github.com/duckdb/duckdb) Copyright 2018-2022 Stichting DuckDB Foundation (MIT License)
 
 [DuckDB extension-template](https://github.com/duckdb/extension-template) Copyright 2018-2022 DuckDB Labs BV (MIT License)
+
+[DuckDB extension-template-c](https://github.com/duckdb/extension-template-c)
 
 [Lua](https://lua.org/license.html) Copyright © 1994–2025 Lua.org, PUC-Rio. (MIT License)
 

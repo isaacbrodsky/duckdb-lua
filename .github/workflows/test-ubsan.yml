@@ -1,4 +1,4 @@
-name: coverage
+name: test-ubsan
 
 on:
   push:
@@ -12,19 +12,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  coverage:
-    name: coverage
+  ubsan:
+    name: ubsan
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: true
-
-      - name: Install lcov
-        run: |
-          sudo apt update
-          sudo apt-get install lcov
 
       - name: Setup vcpkg
         run: |
@@ -43,10 +38,5 @@ jobs:
       - name: Configure
         run: make configure
 
-      - name: Coverage
-        run: make coverage
-
-      - uses: codecov/codecov-action@v7
-        with:
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: UBSan
+        run: make ubsan

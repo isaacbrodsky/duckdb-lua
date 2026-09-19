@@ -4,9 +4,9 @@
 
 # Before we load the extension, this will fail
 statement error
-SELECT lua('Sam', {'hello':'world'}::json);
+SELECT lua_json('Sam', {'hello':'world'}::json);
 ----
-Catalog Error: Scalar Function with name lua does not exist!
+Catalog Error: Scalar Function with name lua_json does not exist!
 
 # Require statement will ensure this test is run with this extension loaded
 require lua
@@ -15,52 +15,57 @@ require json
 
 # Invalid code
 query I
-SELECT lua('aaa', {'hello':'world'}::json);
+SELECT lua_json('aaa', {'hello':'world'}::json);
 ----
 [string "line"]:1: syntax error near <eof>
 
 query I
-SELECT lua('return context["hello"]', {'hello':'world'}::json);
+SELECT lua_json('return context["hello"]', {'hello':'world'}::json);
 ----
 "world"
 
 query I
-SELECT lua(NULL, {'hello':'world'}::json);
+SELECT lua_json(NULL, {'hello':'world'}::json);
 ----
 NULL
 
 query I
-SELECT lua('return context', {'hello':'world'}::json);
+SELECT lua_json('return context', {'hello':'world'}::json);
 ----
 {"hello":"world"}
 
 query I
-SELECT lua('function fn() return "Can not serialize function" end; return fn', {'hello':'world'}::json);
+SELECT lua_json('function fn() return "Can not serialize function" end; return fn', {'hello':'world'}::json);
 ----
 type 'function' is not supported by JSON.
 
 query I
-SELECT lua('return {context["hello"], 123}', {'hello':'world'}::json);
+SELECT lua_json('return {context["hello"], 123}', {'hello':'world'}::json);
 ----
 ["world",123]
 
 query I
-SELECT lua('return context[1] + context[2]', [1,2,-1]::json);
+SELECT lua_json('return context[1] + context[2]', [1,2,-1]::json);
 ----
 3
 
 query I
-SELECT lua('return context * -1', 5::json);
+SELECT lua_json('return context * -1', 5::json);
 ----
 -5
 
 query I
-SELECT lua('return context', '"aaa"'::json);
+SELECT lua_json('return context', '"aaa"'::json);
 ----
 "aaa"
 
 query I
-SELECT lua('return "abc" .. context', cast(i as json)) FROM range(0, 5) tbl(i);
+SELECT lua_json('return context_abc', '"aaa"'::json, 'context_abc');
+----
+"aaa"
+
+query I
+SELECT lua_json('return "abc" .. context', cast(i as json)) FROM range(0, 5) tbl(i);
 ----
 "abc0"
 "abc1"
@@ -69,7 +74,7 @@ SELECT lua('return "abc" .. context', cast(i as json)) FROM range(0, 5) tbl(i);
 "abc4"
 
 query I
-SELECT lua('return "abc" .. context', if(i < 3, null, cast(i as json))) FROM range(0, 5) tbl(i);
+SELECT lua_json('return "abc" .. context', if(i < 3, null, cast(i as json))) FROM range(0, 5) tbl(i);
 ----
 [string "line"]:1: attempt to concatenate a nil value (global 'context')
 [string "line"]:1: attempt to concatenate a nil value (global 'context')

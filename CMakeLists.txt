@@ -1,43 +1,75 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.5...3.29)
+option(DUCKDB_WASM_EXTENSION "Whether compiling for Wasm target" OFF)
 
-# Set extension name here
-set(TARGET_NAME lua)
+###
+# Configuration
+###
+if(NOT DEFINED EXTENSION_NAME)
+    message(FATAL_ERROR "DuckDB extension name is required")
+endif()
+if (DEFINED TARGET_DUCKDB_VERSION_MAJOR)
+    add_definitions(-DDUCKDB_EXTENSION_API_VERSION_MAJOR=${TARGET_DUCKDB_VERSION_MAJOR})
+endif()
+if (DEFINED TARGET_DUCKDB_VERSION_MINOR)
+    add_definitions(-DDUCKDB_EXTENSION_API_VERSION_MINOR=${TARGET_DUCKDB_VERSION_MINOR})
+endif()
+if (DEFINED TARGET_DUCKDB_VERSION_PATCH)
+    add_definitions(-DDUCKDB_EXTENSION_API_VERSION_PATCH=${TARGET_DUCKDB_VERSION_PATCH})
+endif()
 
-# DuckDB's extension distribution supports vcpkg. As such, dependencies can be added in ./vcpkg.json and then
-# used in cmake with find_package. Feel free to remove or replace with other dependencies.
-# Note that it should also be removed from vcpkg.json to prevent needlessly installing it..
+add_definitions(-DDUCKDB_EXTENSION_NAME=${EXTENSION_NAME})
+
+if (DEFINED DUCKDB_EXTENSION_API_VERSION_UNSTABLE)
+    add_definitions(-DDUCKDB_EXTENSION_API_VERSION_UNSTABLE=${DUCKDB_EXTENSION_API_VERSION_UNSTABLE})
+endif()
+
+###
+# Build
+###
+project(${EXTENSION_NAME} LANGUAGES C CXX)
+
+# Create Extension library
+set(EXTENSION_SOURCES
+        src/lua_extension.cpp
+)
+
+# Conflicts with Lua dependency
+set(EXTENSION_TARGET_NAME "${EXTENSION_NAME}_ext")
+if (DUCKDB_WASM_EXTENSION)
+	add_library(${EXTENSION_TARGET_NAME} STATIC ${EXTENSION_SOURCES})
+else()
+	add_library(${EXTENSION_TARGET_NAME} SHARED ${EXTENSION_SOURCES})
+endif()
+
+set_target_properties(${EXTENSION_TARGET_NAME} PROPERTIES OUTPUT_NAME ${EXTENSION_NAME})
+
+# Hide symbols
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(VISIBILITY_INLINES_HIDDEN ON)
+
+# Include own headers
+target_include_directories(${EXTENSION_TARGET_NAME} PRIVATE src/include)
+
+# Include DuckDB C API headers
+target_include_directories(${EXTENSION_TARGET_NAME} PRIVATE duckdb_capi)
+
 find_package(Lua REQUIRED)
+target_include_directories(${EXTENSION_TARGET_NAME} PRIVATE ${LUA_INCLUDE_DIR})
+target_link_libraries(${EXTENSION_TARGET_NAME} ${LUA_LIBRARIES})
 
-set(EXTENSION_NAME ${TARGET_NAME}_extension)
-set(LOADABLE_EXTENSION_NAME ${TARGET_NAME}_loadable_extension)
-
-project(${TARGET_NAME})
-include_directories(src/include)
-
-set(EXTENSION_SOURCES src/lua_extension.cpp)
-
-build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
-build_loadable_extension(${TARGET_NAME} " " ${EXTENSION_SOURCES})
-
-# Link Lua in both the static library as the loadable extension
-target_include_directories(${EXTENSION_NAME} PRIVATE ${LUA_INCLUDE_DIR})
-target_include_directories(${LOADABLE_EXTENSION_NAME} PRIVATE ${LUA_INCLUDE_DIR})
-target_link_libraries(${EXTENSION_NAME} ${LUA_LIBRARIES})
-target_link_libraries(${LOADABLE_EXTENSION_NAME} ${LUA_LIBRARIES})
-
-install(
-  TARGETS ${EXTENSION_NAME}
-  EXPORT "${DUCKDB_EXPORT_SET}"
-  LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
-  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}")
+option(ENABLE_UBSAN "Build with UBSan" OFF)
+if (ENABLE_UBSAN)
+    message("UBSan enabled")
+    target_compile_options(${EXTENSION_TARGET_NAME} PRIVATE -fsanitize=undefined -fno-sanitize-recover=all -fno-omit-frame-pointer)
+    target_link_options(${EXTENSION_TARGET_NAME} PRIVATE -fsanitize=undefined)
+endif()
 
 option(ENABLE_COVERAGE "Build with coverage" OFF)
 if (ENABLE_COVERAGE)
     message("Coverage enabled")
-    target_compile_options(${EXTENSION_NAME} PRIVATE --coverage)
-    target_compile_options(${LOADABLE_EXTENSION_NAME} PRIVATE --coverage)
-    target_link_options(${EXTENSION_NAME} PUBLIC --coverage)
-    target_link_options(${LOADABLE_EXTENSION_NAME} PUBLIC --coverage)
+    target_compile_options(${EXTENSION_TARGET_NAME} PRIVATE --coverage)
+    target_link_options(${EXTENSION_TARGET_NAME} PUBLIC --coverage)
     file(
             GENERATE
             OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/scripts/coverage.sh"
