@@ -15,8 +15,6 @@ jobs:
   coverage:
     name: coverage
     runs-on: ubuntu-latest
-    env:
-      GEN: ninja
 
     steps:
       - uses: actions/checkout@v6
