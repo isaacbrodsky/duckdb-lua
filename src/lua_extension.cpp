@@ -332,7 +332,7 @@ static void RegisterLuaScalarVarcharFunction(duckdb_scalar_function_set function
 template <bool WithContext>
 static void RegisterLuaScalarJsonFunction(duckdb_scalar_function_set functionSet) {
 	duckdb_scalar_function function = duckdb_create_scalar_function();
-	duckdb_scalar_function_set_name(function, "lua");
+	duckdb_scalar_function_set_name(function, "lua_json");
 	duckdb_logical_type type = duckdb_create_logical_type(DUCKDB_TYPE_VARCHAR);
 	duckdb_scalar_function_add_parameter(function, type);
 	duckdb_logical_type typeJson = duckdb_create_logical_type(DUCKDB_TYPE_VARCHAR);
@@ -375,10 +375,11 @@ static void RegisterLuaScalarNumericFunction(duckdb_scalar_function_set function
 
 void RegisterLuaFunctions(duckdb_connection connection) {
 	auto luaFunctionSet = duckdb_create_scalar_function_set("lua");
+	auto luaJsonFunctionSet = duckdb_create_scalar_function_set("lua_json");
 
 	RegisterLuaScalarFunction(luaFunctionSet);
 	RegisterLuaScalarVarcharFunction<false>(luaFunctionSet);
-	RegisterLuaScalarJsonFunction<false>(luaFunctionSet);
+	RegisterLuaScalarJsonFunction<false>(luaJsonFunctionSet);
 	RegisterLuaScalarNumericFunction<float, false>(luaFunctionSet, DUCKDB_TYPE_FLOAT);
 	RegisterLuaScalarNumericFunction<double, false>(luaFunctionSet, DUCKDB_TYPE_DOUBLE);
 	RegisterLuaScalarNumericFunction<int8_t, false>(luaFunctionSet, DUCKDB_TYPE_TINYINT);
@@ -392,7 +393,7 @@ void RegisterLuaFunctions(duckdb_connection connection) {
 	RegisterLuaScalarNumericFunction<bool, false>(luaFunctionSet, DUCKDB_TYPE_BOOLEAN);
 
 	RegisterLuaScalarVarcharFunction<true>(luaFunctionSet);
-	RegisterLuaScalarJsonFunction<true>(luaFunctionSet);
+	RegisterLuaScalarJsonFunction<true>(luaJsonFunctionSet);
 	RegisterLuaScalarNumericFunction<float, true>(luaFunctionSet, DUCKDB_TYPE_FLOAT);
 	RegisterLuaScalarNumericFunction<double, true>(luaFunctionSet, DUCKDB_TYPE_DOUBLE);
 	RegisterLuaScalarNumericFunction<int8_t, true>(luaFunctionSet, DUCKDB_TYPE_TINYINT);
@@ -407,6 +408,8 @@ void RegisterLuaFunctions(duckdb_connection connection) {
 
 	duckdb_register_scalar_function_set(connection, luaFunctionSet);
 	duckdb_destroy_scalar_function_set(&luaFunctionSet);
+	duckdb_register_scalar_function_set(connection, luaJsonFunctionSet);
+	duckdb_destroy_scalar_function_set(&luaJsonFunctionSet);
 }
 
 DUCKDB_EXTENSION_ENTRYPOINT(duckdb_connection connection, duckdb_extension_info info,
