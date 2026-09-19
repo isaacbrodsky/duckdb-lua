@@ -154,9 +154,7 @@ void LuaScalarJsonFun(duckdb_function_info info, duckdb_data_chunk input, duckdb
 	if (jsonError) {
 		// Should not be reachable
 		resultStr = ReadLuaResponse(L, jsonError);
-		for (idx_t row = 0; row < inputSize; row++) {
-			duckdb_vector_assign_string_element(output, row, resultStr.c_str());
-		}
+		duckdb_function_set_error(info, resultStr.c_str());
 
 		lua_close(L);
 		return;
