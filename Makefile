@@ -43,6 +43,6 @@ ubsan: debug test_debug
 
 coverage:
 	EXT_DEBUG_FLAGS=-DENABLE_COVERAGE=1 make debug
-	cmake --build build/debug --config Debug --target clean-coverage
+	cmake --build cmake_build/debug --config Debug --target clean-coverage
 	make test_debug
-	cmake --build build/debug --config Debug --target coverage
+	cmake --build cmake_build/debug --config Debug --target coverage
