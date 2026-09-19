@@ -60,6 +60,11 @@ SELECT lua_json('return context', '"aaa"'::json);
 "aaa"
 
 query I
+SELECT lua_json('return context_abc', '"aaa"'::json, 'context_abc');
+----
+"aaa"
+
+query I
 SELECT lua_json('return "abc" .. context', cast(i as json)) FROM range(0, 5) tbl(i);
 ----
 "abc0"
