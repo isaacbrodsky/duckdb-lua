@@ -23,6 +23,11 @@ SELECT lua('return "aa" .. "bb"');
 aabb
 
 query I
+SELECT lua('return _VERSION');
+----
+Lua 5.5
+
+query I
 SELECT lua('return 1 > 2');
 ----
 false
@@ -78,3 +83,8 @@ abc1
 abc2
 NULL
 NULL
+
+query I
+SELECT lua('function fn() return "Can not serialize function" end; return fn');
+----
+Unknown type: function

@@ -37,3 +37,12 @@ format-check:
 format:
 	python3 duckdb/scripts/format.py --all --fix --noconfirm --directories src test
 
+ubsan: export EXTRA_CMAKE_FLAGS=-DENABLE_UBSAN=1
+ubsan: export UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1
+ubsan: debug test_debug
+
+coverage:
+	EXT_DEBUG_FLAGS=-DENABLE_COVERAGE=1 make debug
+	cmake --build build/debug --config Debug --target clean-coverage
+	make test_debug
+	cmake --build build/debug --config Debug --target coverage
