@@ -1,6 +1,6 @@
 [![Extension Test](https://github.com/isaacbrodsky/duckdb-lua/actions/workflows/MainDistributionPipeline.yml/badge.svg)](https://github.com/isaacbrodsky/duckdb-lua/actions/workflows/MainDistributionPipeline.yml)
 [![DuckDB Version](https://img.shields.io/static/v1?label=duckdb&message=v1.5.5&color=blue)](https://github.com/duckdb/duckdb/releases/tag/v1.5.5)
-[![Lua Version](https://img.shields.io/static/v1?label=lua&message=v5.5.0&color=blue)](https://lua.org/home.html)
+[![Lua Version](https://img.shields.io/static/v1?label=lua&message=v5.4.8&color=blue)](https://lua.org/home.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![codecov](https://codecov.io/gh/isaacbrodsky/duckdb-lua/graph/badge.svg?token=VTW5PTETLY)](https://codecov.io/gh/isaacbrodsky/duckdb-lua)
 
@@ -42,7 +42,7 @@ DuckDB extensions uses VCPKG for dependency management. Enabling VCPKG is very s
 ```shell
 git clone https://github.com/Microsoft/vcpkg.git
 cd vcpkg
-git checkout cd61e1e26a038e82d6550a3ebbe0fbbfe7da78e3
+git checkout 84bab45d415d22042bd0b9081aea57f362da3f35
 cd ..
 ./vcpkg/bootstrap-vcpkg.sh
 export VCPKG_TOOLCHAIN_PATH=`pwd`/vcpkg/scripts/buildsystems/vcpkg.cmake
