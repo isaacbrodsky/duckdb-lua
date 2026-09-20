@@ -5,6 +5,7 @@
 #include <string>
 #include <type_traits>
 #include <cassert>
+#include <cstring>
 
 extern "C" {
 #include <lua.h>
@@ -103,7 +104,7 @@ private:
 
 	duckdb_function_info info;
 	lua_State *L;
-	
+
 	/** Whether a script has been saved - lastScript* fields are only valid if this is true */
 	bool hasLastScript;
 	const char *lastScriptData;
