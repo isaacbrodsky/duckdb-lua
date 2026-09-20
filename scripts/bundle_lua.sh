@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -eux
 
 AR="$1"
 RANLIB="$2"
