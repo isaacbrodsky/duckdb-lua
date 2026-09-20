@@ -7,7 +7,8 @@ RANLIB="$2"
 EXTENSION_LIB="$3"
 LUA_LIB="$4"
 
-if "$AR" t "$EXTENSION_LIB" | grep -qxF "lapi"; then
+sentinel="$("$AR" t "$LUA_LIB" | head -n 1)"
+if "$AR" t "$EXTENSION_LIB" | grep -qxF "$sentinel"; then
   echo "$EXTENSION_LIB contains $LUA_LIB already"
   exit 0
 fi
