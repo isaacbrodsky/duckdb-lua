@@ -25,7 +25,7 @@ aabb
 query I
 SELECT lua('return _VERSION');
 ----
-Lua 5.4
+Lua 5.5
 
 query I
 SELECT lua('return 1 > 2');
@@ -37,16 +37,21 @@ SELECT lua('return 1 < 2');
 ----
 true
 
-query I
+statement error
 SELECT lua('1 < 2');
 ----
-[string "line"]:1: unexpected symbol near '1'
+Lua Error: [string "line"]:1: unexpected symbol near '1'
 
 # Invalid code
-query I
+statement error
 SELECT lua('aaa');
 ----
-[string "line"]:1: syntax error near <eof>
+Lua Error: [string "line"]:1: syntax error near <eof>
+
+statement error
+SELECT lua('error({})');
+----
+Lua Error: Unknown type: table
 
 query I
 SELECT lua('return "abc"') FROM range(0, 5) tbl(i);
@@ -88,3 +93,31 @@ query I
 SELECT lua('function fn() return "Can not serialize function" end; return fn');
 ----
 Unknown type: function
+
+query I
+SELECT lua(s)
+FROM (VALUES
+    ('return "A" .. "B"'),
+    (NULL),
+    ('return true'),
+    ('return false'),
+    ('return -1'),
+) AS t(s);
+----
+AB
+NULL
+true
+false
+-1
+
+statement error
+SELECT lua(s)
+FROM (VALUES
+    ('return "A" .. "B"'),
+    (NULL),
+    ('return true'),
+    ('return false'),
+    ('invalid'),
+) AS t(s);
+----
+Lua Error: [string "line"]:1: syntax error near <eof>

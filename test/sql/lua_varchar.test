@@ -41,16 +41,16 @@ SELECT lua('return 1 < 2', 'NULL');
 ----
 true
 
-query I
+statement error
 SELECT lua('1 < 2', 'abcdefghijkl');
 ----
-[string "line"]:1: unexpected symbol near '1'
+Lua Error: [string "line"]:1: unexpected symbol near '1'
 
 # Invalid code
-query I
+statement error
 SELECT lua('aaa', 'abcdef');
 ----
-[string "line"]:1: syntax error near <eof>
+Lua Error: [string "line"]:1: syntax error near <eof>
 
 query I
 SELECT lua('return "abc" .. context', cast(i as varchar)) FROM range(0, 5) tbl(i);
@@ -60,6 +60,15 @@ abc1
 abc2
 abc3
 abc4
+
+query I
+SELECT lua(if(i < 3, null, 'return context == "4"'), cast(i as varchar)) FROM range(0, 5) tbl(i);
+----
+NULL
+NULL
+NULL
+false
+true
 
 query I
 SELECT lua('return context == nil', if(i < 3, null, cast(i as varchar))) FROM range(0, 5) tbl(i);

@@ -8,26 +8,52 @@ SELECT lua('Sam', 'abc');
 ----
 Catalog Error: Scalar Function with name lua does not exist!
 
-statement error
-set lua_context_name = 'ctx';
-----
-Catalog Error: unrecognized configuration parameter "lua_context_name"
-
 # Require statement will ensure this test is run with this extension loaded
 require lua
 
-statement ok
-set lua_context_name = 'ctx';
-
 query I
-SELECT lua('return context', 'abc');
+SELECT lua('return context', 'abc', 'ctx');
 ----
 nil
 
 query I
-SELECT lua('return ctx', 'abc');
+SELECT lua('return ctx', 'abc', 'ctx');
 ----
 abc
 
-statement ok
-set lua_context_name = 'context';
+query I
+SELECT lua(s, c, v)
+FROM (VALUES
+    ('return tostring(ctx) .. tostring(ctx2) .. tostring(ctx3)', 'A', 'ctx'),
+    ('return tostring(ctx) .. tostring(ctx2) .. tostring(ctx3)', 'B', 'ctx2'),
+    ('return tostring(ctx) .. tostring(ctx2) .. tostring(ctx3)', 'C', 'ctx3')
+) AS t(s, c, v);
+----
+Anilnil
+nilBnil
+nilnilC
+
+query I
+SELECT lua(s, c, v)
+FROM (VALUES
+    ('return tostring(ctx) .. tostring(ctx2) .. tostring(ctx3)', 'A', 'ctx'),
+    ('return tostring(ctx2) .. tostring(ctx3) .. tostring(ctx)', 'B', 'ctx2'),
+    ('return tostring(ctx3) .. tostring(ctx) .. tostring(ctx2)', 'C', 'ctx3')
+) AS t(s, c, v);
+----
+Anilnil
+Bnilnil
+Cnilnil
+
+# Check with extra space to exercise script cache
+query I
+SELECT lua(s, c, v)
+FROM (VALUES
+    ('return tostring(ctx) .. tostring(ctx2) .. tostring(ctx3)', 'A', 'ctx'),
+    ('return tostring(ctx)  .. tostring(ctx2) .. tostring(ctx3)', 'B', 'ctx2'),
+    ('return tostring(ctx) .. tostring(ctx2) .. tostring(ctx3)', 'C', 'ctx3')
+) AS t(s, c, v);
+----
+Anilnil
+nilBnil
+nilnilC

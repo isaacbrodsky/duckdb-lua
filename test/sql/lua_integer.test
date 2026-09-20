@@ -16,6 +16,11 @@ SELECT lua('return context', 5);
 ----
 5
 
+statement error
+SELECT lua('++++', 5);
+----
+Lua Error: [string "line"]:1: unexpected symbol near '+'
+
 query I
 SELECT lua('return "aa" .. context', 100);
 ----
@@ -90,6 +95,16 @@ query I
 SELECT lua('return context', 5::ubigint);
 ----
 5.0
+
+query I
+SELECT lua('return abc', 5::ubigint, 'abc');
+----
+5.0
+
+query I
+SELECT lua('return abc', 5::ubigint, 'abc2');
+----
+nil
 
 query I
 SELECT lua('if context then return "a" else return "b" end', true);
