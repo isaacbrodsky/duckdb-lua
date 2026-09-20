@@ -7,13 +7,13 @@ RANLIB="$2"
 EXTENSION_LIB="$3"
 LUA_LIB="$4"
 
-if "$AR" t "$EXTENSION_LIB" | grep -qxF "lua_pcall"; then
+if "$AR" t "$EXTENSION_LIB" | grep -qxF "lapi"; then
   echo "$EXTENSION_LIB contains $LUA_LIB already"
   exit 0
 fi
 
 temp_dir="$(mktemp -d)"
-trap 'rm -rf "temp_dir"' EXIT
+trap 'rm -rf "$temp_dir"' EXIT
 
 pushd "$temp_dir"
 
