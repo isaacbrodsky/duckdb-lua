@@ -20,6 +20,7 @@ jobs:
       ci_tools_version: v1.5.5
       extension_name: lua
       extra_toolchains: python3
+      vcpkg_commit: cd61e1e26a038e82d6550a3ebbe0fbbfe7da78e3
 
   code-quality-check:
     name: Code Quality Check
