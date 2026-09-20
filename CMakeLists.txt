@@ -62,6 +62,14 @@ find_package(Lua REQUIRED)
 target_include_directories(${EXTENSION_TARGET_NAME} PRIVATE ${LUA_INCLUDE_DIR})
 target_link_libraries(${EXTENSION_TARGET_NAME} ${LUA_LIBRARIES})
 
+if(DUCKDB_WASM_EXTENSION)
+    # The Lua library won't be brought into the WASM bundle unless we take additional steps to bundle it in:
+    add_custom_command(TARGET ${EXTENSION_TARGET_NAME} POST_BUILD
+            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/scripts/bundle_lua.sh" "${CMAKE_AR}" "${CMAKE_RANLIB}" "$<TARGET_FILE:${EXTENSION_TARGET_NAME}>" "${LUA_LIBRARIES}"
+        VERBATIM
+        COMMENT "Bundle Lua into the WASM extension archive")
+endif()
+
 option(ENABLE_UBSAN "Build with UBSan" OFF)
 if (ENABLE_UBSAN)
     message("UBSan enabled")
