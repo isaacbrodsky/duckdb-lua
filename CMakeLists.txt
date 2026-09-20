@@ -23,6 +23,10 @@ if (DEFINED DUCKDB_EXTENSION_API_VERSION_UNSTABLE)
     add_definitions(-DDUCKDB_EXTENSION_API_VERSION_UNSTABLE=${DUCKDB_EXTENSION_API_VERSION_UNSTABLE})
 endif()
 
+if(APPLE AND DEFINED ENV{OSX_BUILD_ARCH})
+  set(CMAKE_OSX_ARCHITECTURES $ENV{OSX_BUILD_ARCH})
+endif()
+
 ###
 # Build
 ###
@@ -77,15 +81,15 @@ if (ENABLE_COVERAGE)
     set_property(
             DIRECTORY
             APPEND
-            PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "coverage.info")
+            PROPERTY ADDITIONAL_CLEAN_FILES "coverage.info")
     set_property(
             DIRECTORY
             APPEND
-            PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "coverage.cleaned.info")
+            PROPERTY ADDITIONAL_CLEAN_FILES "coverage.cleaned.info")
     set_property(
             DIRECTORY
             APPEND
-            PROPERTY ADDITIONAL_MAKE_CLEAN_FILES "coverage")
+            PROPERTY ADDITIONAL_CLEAN_FILES "coverage")
     add_custom_target(
             coverage
             COMMAND

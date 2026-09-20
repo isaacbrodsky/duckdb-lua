@@ -16,6 +16,11 @@ SELECT lua('return context', 5);
 ----
 5
 
+statement error
+SELECT lua('++++', 5);
+----
+Lua Error: [string "line"]:1: unexpected symbol near '+'
+
 query I
 SELECT lua('return "aa" .. context', 100);
 ----

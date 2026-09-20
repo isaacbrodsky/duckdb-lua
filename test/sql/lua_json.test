@@ -14,10 +14,10 @@ require lua
 require json
 
 # Invalid code
-query I
+statement error
 SELECT lua_json('aaa', {'hello':'world'}::json);
 ----
-[string "line"]:1: syntax error near <eof>
+Lua Error: [string "line"]:1: syntax error near <eof>
 
 query I
 SELECT lua_json('return context["hello"]', {'hello':'world'}::json);
@@ -34,7 +34,7 @@ SELECT lua_json('return context', {'hello':'world'}::json);
 ----
 {"hello":"world"}
 
-query I
+statement error
 SELECT lua_json('function fn() return "Can not serialize function" end; return fn', {'hello':'world'}::json);
 ----
 type 'function' is not supported by JSON.
@@ -73,11 +73,22 @@ SELECT lua_json('return "abc" .. context', cast(i as json)) FROM range(0, 5) tbl
 "abc3"
 "abc4"
 
-query I
+statement error
 SELECT lua_json('return "abc" .. context', if(i < 3, null, cast(i as json))) FROM range(0, 5) tbl(i);
 ----
-[string "line"]:1: attempt to concatenate a nil value (global 'context')
-[string "line"]:1: attempt to concatenate a nil value (global 'context')
-[string "line"]:1: attempt to concatenate a nil value (global 'context')
-"abc3"
-"abc4"
+Lua Error: [string "line"]:1: attempt to concatenate a nil value (global 'context')
+
+# Valid JSON in DuckDB but not parseable by Lua
+statement error
+SELECT lua_json('return type(context)', (repeat('[', 100000) || repeat(']', 100000))::json)
+----
+Lua Error: [string "dkjson.lua"]:572: stack overflow
+
+query I
+SELECT lua_json(if(i > 2, null, 'return context == 1'), i) FROM range(0, 5) tbl(i);
+----
+false
+true
+false
+NULL
+NULL
