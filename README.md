@@ -1,5 +1,5 @@
 [![Extension Test](https://github.com/isaacbrodsky/duckdb-lua/actions/workflows/MainDistributionPipeline.yml/badge.svg)](https://github.com/isaacbrodsky/duckdb-lua/actions/workflows/MainDistributionPipeline.yml)
-[![DuckDB Version](https://img.shields.io/static/v1?label=duckdb&message=v1.5.5&color=blue)](https://github.com/duckdb/duckdb/releases/tag/v1.5.5)
+[![DuckDB Version](https://img.shields.io/static/v1?label=duckdb&message=v1.5.6&color=blue)](https://github.com/duckdb/duckdb/releases/tag/v1.5.6)
 [![Lua Version](https://img.shields.io/static/v1?label=lua&message=v5.5.0&color=blue)](https://lua.org/home.html)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![codecov](https://codecov.io/gh/isaacbrodsky/duckdb-lua/graph/badge.svg?token=VTW5PTETLY)](https://codecov.io/gh/isaacbrodsky/duckdb-lua)
