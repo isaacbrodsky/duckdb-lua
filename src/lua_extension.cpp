@@ -480,7 +480,7 @@ static void RegisterLuaScalarNumericFunction(duckdb_scalar_function_set function
 	}
 	duckdb_scalar_function_set_return_type(function, type);
 	duckdb_destroy_logical_type(&type);
-	duckdb_destroy_logical_type(&argType);
+	// duckdb_destroy_logical_type(&argType); // leak test
 	duckdb_scalar_function_set_function(function, LuaScalarNumericFun<T>);
 	duckdb_scalar_function_set_volatile(function);
 	duckdb_scalar_function_set_special_handling(function);
